@@ -14,6 +14,34 @@ type Props = {
 
 type Tip = { left: number; top: number; below: boolean };
 
+const SAMPLE_SPINE_TITLES: Record<string, string> = {
+  'sample-gatsby': 'The Great Gatsby',
+  'sample-pride': 'Pride & Prejudice',
+  'sample-alice': 'Alice in Wonderland',
+  'sample-artofwar': 'The Art of War',
+  'sample-meditations': 'Meditations',
+  'sample-manual': 'PageCat 读本',
+};
+
+function labelWeight(text: string) {
+  return [...text].reduce((n, ch) => n + (/[\u2e80-\u2fff\u3400-\u9fff]/.test(ch) ? 2 : 1), 0);
+}
+
+function shortenSpineTitle(raw: string) {
+  const cleaned = raw.replace(/\s+/g, ' ').replace(/\s*[:：]\s*.*$/, '').trim();
+  const chars = [...cleaned];
+  const maxWeight = 17;
+  let out = '';
+  let weight = 0;
+  for (const ch of chars) {
+    const next = weight + (/[\u2e80-\u2fff\u3400-\u9fff]/.test(ch) ? 2 : 1);
+    if (next > maxWeight) return `${out.trimEnd()}…`;
+    out += ch;
+    weight = next;
+  }
+  return cleaned;
+}
+
 export function BookSpine({ book, index, pulling, onOpen, onContext }: Props) {
   const timer = useRef<number | null>(null);
   const longPressed = useRef(false);
@@ -24,6 +52,9 @@ export function BookSpine({ book, index, pulling, onOpen, onContext }: Props) {
   const title = book.titleZh || book.title;
   const author = book.authorZh || book.author;
   const progress = book.percent ?? 0;
+  const spineLabel = SAMPLE_SPINE_TITLES[book.id] || shortenSpineTitle(title);
+  const spineWeight = labelWeight(spineLabel);
+  const spineTitleClass = spineWeight > 15 ? 'xsmall' : spineWeight > 12 ? 'small' : '';
 
   const clearTimer = () => {
     if (timer.current) {
@@ -105,14 +136,14 @@ export function BookSpine({ book, index, pulling, onOpen, onContext }: Props) {
         <span className="spine-ornament" aria-hidden="true">
           <svg viewBox="0 0 20 20"><path d="M4 13.5c0-4 2.6-7 6-7s6 3 6 7" fill="none" stroke="currentColor" strokeWidth="1.2"/><path d="M4.6 13.5h10.8" stroke="currentColor" strokeWidth="1.2"/><circle cx="8.2" cy="10.2" r=".8" fill="currentColor"/><circle cx="12" cy="10.2" r=".8" fill="currentColor"/></svg>
         </span>
-        <span className="spine-title">{title}</span>
+        <span className={`spine-title ${spineTitleClass}`}>{spineLabel}</span>
         <span className="spine-author">{author}</span>
         {progress > 0 && (
           <span className="spine-progress" aria-hidden="true">
             <span style={{ height: `${Math.max(8, Math.min(100, progress * 100))}%` }} />
           </span>
         )}
-        {progress > 0 && <span className="spine-ribbon" style={{ height: `${18 + progress * 26}px` }} aria-hidden="true" />}
+        {progress > 0 && <span className="spine-ribbon" style={{ height: `${34 + progress * 24}px` }} aria-hidden="true" />}
       </button>
       {tip &&
         createPortal(

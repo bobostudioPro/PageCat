@@ -718,8 +718,8 @@
 
 .spine-title {
   position: absolute;
-  top: 52px;
-  bottom: 52px;
+  top: 50px;
+  bottom: 46px;
   left: 0;
   right: 0;
   display: flex;
@@ -727,16 +727,27 @@
   justify-content: center;
   writing-mode: vertical-rl;
   text-orientation: mixed;
+  white-space: nowrap;
   font-family: var(--font-display);
-  font-size: 13.5px;
+  font-size: 12.5px;
   font-weight: 450;
-  letter-spacing: 0.1em;
-  line-height: 1.15;
+  letter-spacing: 0.075em;
+  line-height: 1.1;
   color: #f4e3c4;
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.45);
   overflow: hidden;
-  padding: 4px 0;
+  padding: 3px 0;
   pointer-events: none;
+}
+
+.spine-title.small {
+  font-size: 11.2px;
+  letter-spacing: 0.05em;
+}
+
+.spine-title.xsmall {
+  font-size: 10.2px;
+  letter-spacing: 0.03em;
 }
 
 .spine-author {
@@ -779,14 +790,31 @@
 
 .spine-ribbon {
   position: absolute;
-  top: -7px;
-  right: 7px;
-  width: 6px;
-  border-radius: 0 0 1px 1px;
-  background: linear-gradient(180deg, #e7d7b8, #c9b48d);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 84%, 0 100%);
+  top: -8px;
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  width: 9px;
+  z-index: 4;
+  border-radius: 2px 2px 0 0;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.28), transparent 30%, transparent 70%, rgba(95, 62, 28, 0.18)),
+    linear-gradient(180deg, #f1e2c5, #d8c09a 60%, #c1a67e);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.32), inset 0 0 0 1px rgba(255, 247, 229, 0.35);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 85%, 0 100%);
   pointer-events: none;
+}
+
+.spine-ribbon::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 5px;
+  border-radius: 2px 2px 0 0;
+  background: linear-gradient(180deg, #d7b477, #9d7440);
+  box-shadow: inset 0 1px 0 rgba(255, 246, 225, 0.5);
 }
 
 .spine-tooltip {
