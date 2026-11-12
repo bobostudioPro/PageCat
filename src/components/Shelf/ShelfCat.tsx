@@ -18,9 +18,14 @@ const heartSpots = [
 
 type Props = {
   dragActive?: boolean;
+  x?: number;
+  dragging?: boolean;
+  onMoveStart?: (event: React.DragEvent<HTMLButtonElement>) => void;
+  onMoveEnd?: () => void;
+  movable?: boolean;
 };
 
-export function ShelfCat({ dragActive = false }: Props) {
+export function ShelfCat({ dragActive = false, x = 82, dragging = false, movable = true, onMoveStart, onMoveEnd }: Props) {
   const [mood, setMood] = useState<CatMood>('sleeping');
   const [bubble, setBubble] = useState<string | null>(null);
   const [hearts, setHearts] = useState(0);
@@ -177,8 +182,8 @@ export function ShelfCat({ dragActive = false }: Props) {
 
   return (
     <div
-      className={cn('shelf-cat', mood, blinking && 'blinking', dragActive && 'drag-alert')}
-      style={{ '--look-x': `${look.x}px`, '--look-y': `${look.y}px` } as React.CSSProperties}
+      className={cn('shelf-cat', mood, blinking && 'blinking', dragActive && 'drag-alert', dragging && 'decor-dragging')}
+      style={{ left: `clamp(112px, ${x}%, calc(100% - 112px))`, right: 'auto', '--look-x': `${look.x}px`, '--look-y': `${look.y}px` } as React.CSSProperties}
     >
       {bubble && (
         <div className="cat-bubble" role="status">
@@ -338,6 +343,29 @@ export function ShelfCat({ dragActive = false }: Props) {
           ))}
         </div>
       </div>
+
+      {movable && <button
+        className="decor-grip cat-grip"
+        draggable
+        onDragStart={(event) => {
+          event.stopPropagation();
+          const root = event.currentTarget.closest('.shelf-cat') as HTMLElement | null;
+          if (root) event.dataTransfer.setDragImage(root, 112, 80);
+          onMoveStart?.(event);
+        }}
+        onDragEnd={() => onMoveEnd?.()}
+        aria-label="拖动移动猫"
+        title="拖动移动猫"
+      >
+        <span className="grip-dots" aria-hidden="true">
+          <i />
+          <i />
+          <i />
+          <i />
+          <i />
+          <i />
+        </span>
+      </button>}
     </div>
   );
 }

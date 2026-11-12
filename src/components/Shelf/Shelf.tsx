@@ -21,7 +21,49 @@ type Props = {
 
 type DropTarget = { row: number; index: number; left: number };
 
-const rowCapacity = 8;
+type DecorKind = 'cat' | 'plant';
+type DecorPlacement = { row: number | null; x: number };
+type DecorStore = { cat: DecorPlacement; plant: DecorPlacement };
+
+const DECOR_KEY = 'pagecat.shelfDecor.v1';
+const defaultDecor: DecorStore = {
+  cat: { row: 0, x: 82 },
+  plant: { row: null, x: 80 },
+};
+
+function clampDecorX(x: number) {
+  return Math.max(10, Math.min(86, x));
+}
+
+function loadDecor(): DecorStore {
+  try {
+    const raw = localStorage.getItem(DECOR_KEY);
+    if (!raw) return defaultDecor;
+    const parsed = JSON.parse(raw) as Partial<DecorStore>;
+    return {
+      cat: {
+        row: Number.isInteger(parsed.cat?.row) ? Number(parsed.cat?.row) : 0,
+        x: clampDecorX(Number(parsed.cat?.x ?? defaultDecor.cat.x)),
+      },
+      plant: {
+        row: Number.isInteger(parsed.plant?.row) ? Number(parsed.plant?.row) : null,
+        x: clampDecorX(Number(parsed.plant?.x ?? defaultDecor.plant.x)),
+      },
+    };
+  } catch {
+    return defaultDecor;
+  }
+}
+
+function saveDecor(decor: DecorStore) {
+  try {
+    localStorage.setItem(DECOR_KEY, JSON.stringify(decor));
+  } catch {
+    // visual placement only; ignore storage errors
+  }
+}
+
+const rowCapacity = 12;
 
 const shelfLabels = [
   { kicker: 'RECENTLY READ', zh: '常读常新' },
@@ -32,7 +74,7 @@ const shelfLabels = [
 function useShelfLayout() {
   const read = () => {
     const width = typeof window === 'undefined' ? 1440 : window.innerWidth;
-    return { wide: width >= 1000, perRow: width < 760 ? 3 : 4 };
+    return { wide: width >= 1200, perRow: width < 760 ? 3 : 4 };
   };
   const [layout, setLayout] = useState(read);
   useEffect(() => {
@@ -62,6 +104,10 @@ export function Shelf({
   const dragIdRef = useRef<string | null>(null);
   const dropRef = useRef<DropTarget | null>(null);
   const justDragged = useRef(false);
+  const [decor, setDecor] = useState<DecorStore>(loadDecor);
+  const [decorDrag, setDecorDrag] = useState<DecorKind | null>(null);
+  const [decorDrop, setDecorDrop] = useState<{ row: number; x: number; kind: DecorKind } | null>(null);
+  const decorDragRef = useRef<DecorKind | null>(null);
 
   const canDrag = !query.trim() && layout.wide;
   const filtered = query.trim()
@@ -99,9 +145,52 @@ export function Shelf({
     });
   }
 
+  const catRow = Math.min(rows.length - 1, Math.max(0, decor.cat.row ?? 0));
+  const plantRow = Math.min(rows.length - 1, Math.max(0, decor.plant.row ?? rows.length - 1));
+
+  useEffect(() => {
+    if (query.trim()) return;
+    setDecor((prev) => {
+      const last = rows.length - 1;
+      const nextCatRow = Math.max(0, Math.min(prev.cat.row ?? 0, last));
+      const nextPlantRow = prev.plant.row == null ? null : Math.max(0, Math.min(prev.plant.row, last));
+      if (nextCatRow === prev.cat.row && nextPlantRow === prev.plant.row) return prev;
+      const next = {
+        cat: { ...prev.cat, row: nextCatRow },
+        plant: { ...prev.plant, row: nextPlantRow },
+      };
+      saveDecor(next);
+      return next;
+    });
+  }, [rows.length, query]);
+
   const handleOpen = (book: Book) => {
     if (justDragged.current) return;
     onOpen(book);
+  };
+
+  const finishDecorDrag = () => {
+    decorDragRef.current = null;
+    setDecorDrag(null);
+    setDecorDrop(null);
+  };
+
+  const handleDecorDragStart = (kind: DecorKind, e: React.DragEvent<HTMLButtonElement>) => {
+    dragIdRef.current = null;
+    dropRef.current = null;
+    setDragId(null);
+    setDrop(null);
+    decorDragRef.current = kind;
+    setDecorDrag(kind);
+    setDecorDrop(null);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', `decor:${kind}`);
+  };
+
+  const placeDecor = (kind: DecorKind, row: number, x: number) => {
+    const next: DecorStore = { ...decor, [kind]: { row, x: clampDecorX(x) } };
+    setDecor(next);
+    saveDecor(next);
   };
 
   const finishDrag = () => {
@@ -116,6 +205,9 @@ export function Shelf({
 
   const handleDragStart = (book: Book, e: React.DragEvent<HTMLDivElement>) => {
     if (!canDrag) return;
+    decorDragRef.current = null;
+    setDecorDrag(null);
+    setDecorDrop(null);
     dragIdRef.current = book.id;
     setDragId(book.id);
     justDragged.current = true;
@@ -171,7 +263,35 @@ export function Shelf({
     return { row, index: last.index + 1, left: last.rect.right - rowRect.left + 6 };
   };
 
+  const computeDecorDrop = (clientX: number, clientY: number) => {
+    const body = bodyRef.current;
+    if (!body) return null;
+    const rowElements = [...body.querySelectorAll<HTMLElement>('.shelf-row')];
+    if (!rowElements.length) return null;
+    const rects = rowElements.map((row) => row.getBoundingClientRect());
+    let row = rects.findIndex((rect) => clientY >= rect.top && clientY <= rect.bottom);
+    if (row < 0) {
+      row = rects.reduce(
+        (best, rect, index) =>
+          Math.abs((rect.top + rect.bottom) / 2 - clientY) <
+          Math.abs((rects[best].top + rects[best].bottom) / 2 - clientY)
+            ? index
+            : best,
+        0,
+      );
+    }
+    const x = clampDecorX(((clientX - rects[row].left) / rects[row].width) * 100);
+    return { row, x };
+  };
+
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    if (decorDragRef.current) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      const target = computeDecorDrop(e.clientX, e.clientY);
+      if (target) setDecorDrop({ ...target, kind: decorDragRef.current });
+      return;
+    }
     if (!dragIdRef.current) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
@@ -183,15 +303,24 @@ export function Shelf({
   };
 
   const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
-    if (!dragIdRef.current) return;
+    if (!dragIdRef.current && !decorDragRef.current) return;
     const next = e.relatedTarget as Node | null;
     if (!next || !e.currentTarget.contains(next)) {
       dropRef.current = null;
       setDrop(null);
+      setDecorDrop(null);
     }
   };
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    if (decorDragRef.current) {
+      e.preventDefault();
+      const kind = decorDragRef.current;
+      const target = computeDecorDrop(e.clientX, e.clientY);
+      if (target) placeDecor(kind, target.row, target.x);
+      finishDecorDrag();
+      return;
+    }
     if (!dragIdRef.current) return;
     e.preventDefault();
     const draggedId = dragIdRef.current;
@@ -223,7 +352,7 @@ export function Shelf({
 
   return (
     <section
-      className={cn('bookcase', filtered.length === 0 && 'empty', dragId && 'reordering')}
+      className={cn('bookcase', filtered.length === 0 && 'empty', (dragId || decorDrag) && 'reordering')}
       aria-label="我的书架"
     >
       <div className="bookcase-crown">
@@ -257,7 +386,7 @@ export function Shelf({
                     pulling={pullingId === book.id}
                     draggable={canDrag}
                     dragging={dragId === book.id}
-                    reordering={Boolean(dragId)}
+                    reordering={Boolean(dragId || decorDrag)}
                     onOpen={handleOpen}
                     onContext={onContext}
                     onDragStart={handleDragStart}
@@ -265,7 +394,21 @@ export function Shelf({
                   />
                 ))}
                 {drop?.row === rowIndex && <span className="shelf-drop-line" style={{ left: drop.left }} aria-hidden="true" />}
-                {isFirst && !query && <ShelfCat dragActive={dragActive} />}
+                {decorDrop?.row === rowIndex && (
+                  <span className={cn('decor-drop-marker', decorDrop.kind)} style={{ left: `${decorDrop.x}%` }} aria-hidden="true">
+                    <em>{decorDrop.kind === 'cat' ? '猫' : '盆栽'}</em>
+                  </span>
+                )}
+                {!query && catRow === rowIndex && (
+                  <ShelfCat
+                    x={decor.cat.x}
+                    movable={layout.wide}
+                    dragging={decorDrag === 'cat'}
+                    onMoveStart={(event) => handleDecorDragStart('cat', event)}
+                    onMoveEnd={finishDecorDrag}
+                    dragActive={dragActive}
+                  />
+                )}
                 {isFirst && filtered.length === 0 && (
                   <div className="shelf-empty">
                     <p>{query ? `没有找到「${query}」` : '书架还空着，像一间刚打扫好的房间。'}</p>
@@ -281,7 +424,15 @@ export function Shelf({
                   </div>
                 )}
                 {isLast && !query && <UploadSlot onUpload={onUpload} />}
-                {isLast && !query && <ShelfDecor />}
+                {!query && plantRow === rowIndex && (
+                  <ShelfDecor
+                    x={decor.plant.x}
+                    movable={layout.wide}
+                    dragging={decorDrag === 'plant'}
+                    onMoveStart={(event) => handleDecorDragStart('plant', event)}
+                    onMoveEnd={finishDecorDrag}
+                  />
+                )}
                 {isLast && filtered.length > 0 && rowBooks.length === 0 && (
                   <div className="shelf-quiet">
                     <span>再放一本书，这里会更热闹。</span>

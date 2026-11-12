@@ -1,7 +1,20 @@
-export function ShelfDecor() {
+import { cn } from '../../lib/utils';
+
+type Props = {
+  x?: number;
+  dragging?: boolean;
+  onMoveStart?: (event: React.DragEvent<HTMLButtonElement>) => void;
+  onMoveEnd?: () => void;
+  movable?: boolean;
+};
+
+export function ShelfDecor({ x = 80, dragging = false, movable = true, onMoveStart, onMoveEnd }: Props) {
   return (
-    <div className="shelf-decor" aria-hidden="true">
-      <div className="deco-stack">
+    <div
+      className={cn('shelf-decor', dragging && 'decor-dragging')}
+      style={{ left: `clamp(63px, ${x}%, calc(100% - 63px))`, right: 'auto' } as React.CSSProperties}
+    >
+      <div className="deco-stack" aria-hidden="true">
         <span className="deco-book b1" />
         <span className="deco-book b2" />
         <span className="deco-book b3" />
@@ -15,6 +28,29 @@ export function ShelfDecor() {
           </svg>
         </span>
       </div>
+
+      {movable && <button
+        className="decor-grip plant-grip"
+        draggable
+        onDragStart={(event) => {
+          event.stopPropagation();
+          const root = event.currentTarget.closest('.shelf-decor') as HTMLElement | null;
+          if (root) event.dataTransfer.setDragImage(root, 62, 50);
+          onMoveStart?.(event);
+        }}
+        onDragEnd={() => onMoveEnd?.()}
+        aria-label="拖动移动盆栽"
+        title="拖动移动盆栽"
+      >
+        <span className="grip-dots" aria-hidden="true">
+          <i />
+          <i />
+          <i />
+          <i />
+          <i />
+          <i />
+        </span>
+      </button>}
     </div>
   );
 }

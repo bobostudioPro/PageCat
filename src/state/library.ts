@@ -18,7 +18,7 @@ type LibraryState = {
   reorderBooks: (rows: string[][]) => Promise<void>;
 };
 
-const ROW_CAPACITY = 8;
+const ROW_CAPACITY = 12;
 
 function fileIdentity(book: Book) {
   if (book.isSample) return undefined;

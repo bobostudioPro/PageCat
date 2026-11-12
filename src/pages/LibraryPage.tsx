@@ -284,7 +284,7 @@ export function LibraryPage() {
             我的书架 <span>{books.length}</span>
           </h2>
           <p>
-            <Sparkles size={13} /> 拖动书脊换位置，或者拖一个 PDF 进来
+            <Sparkles size={13} /> 拖动书脊或猫/盆栽整理书架，也可以拖入 PDF
           </p>
         </div>
 
