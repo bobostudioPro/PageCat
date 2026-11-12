@@ -114,6 +114,7 @@ export function ReaderPage() {
   const pageTurnTimer = useRef<number | undefined>(undefined);
   const renderedPages = useRef(new Set<number>());
   const pageTurnTarget = useRef<number | undefined>(undefined);
+  const turning = useRef(false);
 
   const theme = settings.readerTheme;
   const activeAnnotation = activeAnnotationId ? annotations.find((a) => a.id === activeAnnotationId) ?? null : null;
@@ -267,9 +268,10 @@ export function ReaderPage() {
     const pageEl = nearest?.querySelector<HTMLElement>('.pdf-page');
     if (!pageEl) return;
     const rect = pageEl.getBoundingClientRect();
-    const top = Math.max(62, rect.top);
+    const top = Math.max(62, scrollRect.top + 20);
     const height = Math.min(rect.height, window.innerHeight - top - 8);
     if (height < 120 || rect.width < 80) return;
+    turning.current = true;
 
     const currentBlock = pageEl.closest('.page-block') as HTMLElement | null;
     const currentPage = Number(currentBlock?.dataset.page);
@@ -314,7 +316,14 @@ export function ReaderPage() {
       const target = pageTurnTarget.current;
       const ready = !target || renderedPages.current.has(target);
       if (ready || performance.now() - started > 2600) {
-        setPageTurn(null);
+        if (target) scrollToPage(target, 'auto');
+        window.setTimeout(() => {
+          if (target) scrollToPage(target, 'auto');
+          window.setTimeout(() => {
+            setPageTurn(null);
+            turning.current = false;
+          }, 160);
+        }, 140);
         return;
       }
       pageTurnTimer.current = window.setTimeout(finish, 70);
@@ -323,7 +332,7 @@ export function ReaderPage() {
   };
 
   const turnToPage = (direction: 'next' | 'prev', page: number) => {
-    void showPageTurn(direction, page).finally(() => scrollToPage(page));
+    void showPageTurn(direction, page).finally(() => scrollToPage(page, 'auto'));
   };
 
   useEffect(() => {
@@ -334,6 +343,7 @@ export function ReaderPage() {
       if (raf) return;
       raf = requestAnimationFrame(() => {
         raf = 0;
+        if (turning.current) return;
         const top = el.getBoundingClientRect().top;
         const blocks = el.querySelectorAll<HTMLElement>('.page-block');
         let page = 1;
