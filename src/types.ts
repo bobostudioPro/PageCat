@@ -19,6 +19,8 @@ export type Book = {
   spineColor?: string;
   createdAt: number;
   order?: number;
+  shelfRow?: number;
+  fileHash?: string;
   lastOpenedAt?: number;
   lastPage?: number;
   percent?: number;

@@ -87,7 +87,9 @@ export async function listBooks() {
   };
   const ordered = books.filter((b) => Number.isFinite(b.order));
   if (ordered.length === books.length) {
-    return [...books].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    return [...books].sort(
+      (a, b) => (a.shelfRow ?? 0) - (b.shelfRow ?? 0) || (a.order ?? 0) - (b.order ?? 0),
+    );
   }
   const missing = books.filter((b) => !Number.isFinite(b.order)).sort(legacySort);
   const normalized =

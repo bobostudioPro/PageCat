@@ -296,7 +296,7 @@ export function LibraryPage() {
           onContext={(book, x, y) => setMenu({ book, x, y })}
           onUpload={() => setUploadOpen(true)}
           onClearSearch={() => setQuery('')}
-          onReorder={(ids) => void reorderBooks(ids)}
+          onReorder={(rows) => void reorderBooks(rows)}
           dragActive={dragActive}
         />
 
