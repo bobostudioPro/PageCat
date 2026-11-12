@@ -1,4 +1,4 @@
-import { Copy, Highlighter, NotebookPen, Sparkles, Star, Underline, X } from 'lucide-react';
+import { Copy, Highlighter, Languages, NotebookPen, Sparkles, Star, Underline, X } from 'lucide-react';
 import type { AnnotationColor } from '../../types';
 import type { TextSelection } from '../../lib/selection';
 
@@ -16,14 +16,15 @@ type Props = {
   onFavorite: () => void;
   onNote: () => void;
   onAsk: () => void;
+  onTranslate: () => void;
   onCopy: () => void;
   onClose: () => void;
 };
 
-export function SelectionToolbar({ selection, onHighlight, onUnderline, onFavorite, onNote, onAsk, onCopy, onClose }: Props) {
+export function SelectionToolbar({ selection, onHighlight, onUnderline, onFavorite, onNote, onAsk, onTranslate, onCopy, onClose }: Props) {
   const vw = window.innerWidth;
   const vh = window.innerHeight;
-  const width = 344;
+  const width = 378;
   const left = Math.min(vw - width / 2 - 14, Math.max(width / 2 + 14, selection.anchor.left + selection.anchor.width / 2));
   const placeBelow = selection.anchor.top < 96;
   const top = placeBelow ? selection.anchor.bottom + 12 : selection.anchor.top - 12;
@@ -56,6 +57,9 @@ export function SelectionToolbar({ selection, onHighlight, onUnderline, onFavori
       </button>
       <button className="tb-btn" onClick={onNote} title="写笔记" aria-label="写笔记">
         <NotebookPen size={15} />
+      </button>
+      <button className="tb-btn" onClick={onTranslate} title="翻译这段" aria-label="翻译这段">
+        <Languages size={15} />
       </button>
       <button className="tb-btn accent" onClick={onAsk} title="分析这段 / 问 AI" aria-label="分析这段或问 AI">
         <Sparkles size={15} />

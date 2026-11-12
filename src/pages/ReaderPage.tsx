@@ -5,6 +5,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Lamp,
+  Languages,
   Moon,
   NotebookPen,
   PanelRightClose,
@@ -13,6 +14,7 @@ import {
   Sparkles,
   Sun,
   ZoomIn,
+  Volume2,
   ZoomOut,
 } from 'lucide-react';
 import type { PDFDocumentProxy } from 'pdfjs-dist';
@@ -20,20 +22,33 @@ import { useLibrary } from '../state/library';
 import { useAnnotations } from '../state/annotations';
 import { useSettings } from '../state/settings';
 import { useToast } from '../state/toast';
-import { openBookPdf, getOutline } from '../lib/pdf';
+import { openBookPdf, getOutline, getPageText } from '../lib/pdf';
 import type { Annotation, AnnotationColor, OutlineItem } from '../types';
 import { clamp, isEditableTarget } from '../lib/utils';
 import { selectionFromWindow, hitTest, type TextSelection } from '../lib/selection';
+import { translateTexts, translationErrorMessage, type TranslationProvider } from '../lib/translate';
 import { PageView } from '../components/Reader/PageView';
 import type { ExternalReference } from '../components/AI/AIPanel';
 import { SelectionToolbar } from '../components/Reader/SelectionToolbar';
 import { AnnotationPopover } from '../components/Reader/AnnotationPopover';
 import { ReaderSidebar, type ReaderTab } from '../components/Reader/ReaderSidebar';
+import { SelectionTranslationCard } from '../components/Reader/SelectionTranslationCard';
+import { TtsPlayer } from '../components/Reader/TtsPlayer';
 import { SettingsDialog } from '../components/ui/SettingsDialog';
+import { useTts } from '../state/tts';
 import { Logo } from '../components/ui/Logo';
 
 type PopoverAnchor = { x: number; y: number; top: number; bottom: number };
 type SidebarState = { open: boolean; tab: ReaderTab };
+type SelectionTranslation = {
+  source: string;
+  target: string;
+  loading: boolean;
+  error: string | null;
+  provider?: TranslationProvider;
+  targetLang: 'zh' | 'en';
+  anchor: TextSelection['anchor'];
+};
 
 export function ReaderPage() {
   const { bookId } = useParams();
@@ -66,6 +81,8 @@ export function ReaderPage() {
   const [flashId, setFlashId] = useState<string>();
   const [focusNote, setFocusNote] = useState(0);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [selectionTranslation, setSelectionTranslation] = useState<SelectionTranslation | null>(null);
+  const speaking = useTts((s) => s.speaking);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const restored = useRef(false);
@@ -405,6 +422,10 @@ export function ReaderPage() {
     if (window.innerWidth <= 1024) setSidebar((s) => ({ ...s, open: false }));
   };
 
+  const jumpToPanel = (page: number) => {
+    scrollToPage(page);
+  };
+
   const toggleTheme = () => {
     const order = ['paper', 'sepia', 'night'] as const;
     const next = order[(order.indexOf(theme) + 1) % order.length];
@@ -469,8 +490,66 @@ export function ReaderPage() {
   useEffect(() => {
     return () => {
       if (flashTimer.current) window.clearTimeout(flashTimer.current);
+      useTts.getState().stop();
     };
   }, []);
+
+  useEffect(() => {
+    useTts.getState().stop();
+  }, [bookId]);
+
+  const translateSelection = async () => {
+    if (!selection) return;
+    const captured = selection;
+    setSelectionTranslation({
+      source: captured.text,
+      target: '',
+      loading: true,
+      error: null,
+      targetLang: /[\u3400-\u9fff]/.test(captured.text) ? 'en' : 'zh',
+      anchor: captured.anchor,
+    });
+    try {
+      const outcome = await translateTexts([captured.text], {
+        context: book ? `《${book.titleZh || book.title}》第 ${captured.page} 页` : undefined,
+      });
+      setSelectionTranslation({
+        source: captured.text,
+        target: outcome.texts[0] ?? '',
+        loading: false,
+        error: null,
+        provider: outcome.provider,
+        targetLang: outcome.targetLang,
+        anchor: captured.anchor,
+      });
+    } catch (err) {
+      setSelectionTranslation({
+        source: captured.text,
+        target: '',
+        loading: false,
+        error: translationErrorMessage(err),
+        targetLang: /[\u3400-\u9fff]/.test(captured.text) ? 'en' : 'zh',
+        anchor: captured.anchor,
+      });
+    }
+  };
+
+  const readCurrentPage = async () => {
+    if (!doc) return;
+    try {
+      const text = await getPageText(doc, currentPage);
+      if (!text.trim()) {
+        push('这一页没有可朗读的文字', 'error');
+        return;
+      }
+      useTts.getState().speak(text, {
+        label: `第 ${currentPage} 页`,
+        lang: /[\u3400-\u9fff]/.test(text) ? 'zh-CN' : 'en-US',
+      });
+    } catch (err) {
+      push((err as Error).message, 'error');
+    }
+  };
 
   if (status !== 'ready' || !book) {
     return (
@@ -543,6 +622,17 @@ export function ReaderPage() {
           </div>
           <button className="rt-icon" onClick={toggleTheme} title="切换灯光" aria-label="切换阅读灯光">
             {themeIcon}
+          </button>
+          <button className={`rt-icon ${speaking ? 'active' : ''}`} onClick={() => void readCurrentPage()} title="朗读本页" aria-label="朗读本页">
+            <Volume2 size={16} />
+          </button>
+          <button
+            className={`rt-icon ${sidebar.open && sidebar.tab === 'translate' ? 'active' : ''}`}
+            onClick={() => openTab('translate')}
+            title="双语翻译"
+            aria-label="双语翻译"
+          >
+            <Languages size={16} />
           </button>
           <button className="rt-icon" onClick={() => { openTab('notes'); setFocusNote((v) => v + 1); }} title="记笔记" aria-label="记笔记">
             <NotebookPen size={16} />
@@ -617,6 +707,7 @@ export function ReaderPage() {
             onAskHighlight={(annotation) => askAboutSelection(annotation.quote, 'highlight', annotation.page, annotation.id)}
             onAskNote={(note) => askAboutSelection(note.text, 'note', note.page, note.id, note.quote)}
             onJump={jumpTo}
+            onJumpPanel={jumpToPanel}
             onFavorite={(annotation: Annotation, value: boolean) => void annStore.update(annotation.id, { favorite: value })}
             onRemoveAnnotation={(annotation) => void annStore.remove(annotation.id)}
             onAddNote={async (text) => {
@@ -642,12 +733,26 @@ export function ReaderPage() {
           onFavorite={() => void createAnnotation('amber', 'highlight', true)}
           onNote={() => void createAnnotation('amber', 'highlight', false, true)}
           onAsk={() => askAboutSelection(selection.text, 'selection', selection.page)}
+          onTranslate={() => void translateSelection()}
           onCopy={() => {
             void navigator.clipboard.writeText(selection.text);
             push('已复制原文', 'success');
             closeSelection();
           }}
           onClose={closeSelection}
+        />
+      )}
+
+      {selectionTranslation && (
+        <SelectionTranslationCard
+          anchor={selectionTranslation.anchor}
+          source={selectionTranslation.source}
+          target={selectionTranslation.target}
+          loading={selectionTranslation.loading}
+          error={selectionTranslation.error}
+          provider={selectionTranslation.provider}
+          targetLang={selectionTranslation.targetLang}
+          onClose={() => setSelectionTranslation(null)}
         />
       )}
 
@@ -691,6 +796,7 @@ export function ReaderPage() {
         <i><span style={{ width: `${percent * 100}%` }} /></i>
       </div>
 
+      <TtsPlayer />
       <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </div>
   );

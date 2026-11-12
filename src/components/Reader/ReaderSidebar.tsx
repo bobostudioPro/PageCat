@@ -1,12 +1,13 @@
-import { Highlighter, ListTree, NotebookPen, Sparkles, X } from 'lucide-react';
+import { Highlighter, Languages, ListTree, NotebookPen, Sparkles, X } from 'lucide-react';
 import type { PDFDocumentProxy } from 'pdfjs-dist';
 import type { Annotation, Book, Note, OutlineItem } from '../../types';
 import { OutlinePanel } from './OutlinePanel';
 import { HighlightsPanel } from './HighlightsPanel';
 import { NotesPanel } from './NotesPanel';
 import { AIPanel, type ExternalReference } from '../AI/AIPanel';
+import { TranslationPanel } from './TranslationPanel';
 
-export type ReaderTab = 'toc' | 'highlights' | 'notes' | 'ai';
+export type ReaderTab = 'toc' | 'highlights' | 'notes' | 'translate' | 'ai';
 
 type Props = {
   book: Book;
@@ -23,6 +24,7 @@ type Props = {
   focusNote: number;
   aiExternal?: ExternalReference | null;
   onJump: (page: number, annotationId?: string) => void;
+  onJumpPanel: (page: number) => void;
   onFavorite: (annotation: Annotation, value: boolean) => void;
   onRemoveAnnotation: (annotation: Annotation) => void;
   onAddNote: (text: string) => Promise<void>;
@@ -40,11 +42,12 @@ export function ReaderSidebar(props: Props) {
     { key: 'toc', label: '目录', icon: ListTree },
     { key: 'highlights', label: '划线', icon: Highlighter, count: props.annotations.length },
     { key: 'notes', label: '笔记', icon: NotebookPen, count: props.notes.length },
+    { key: 'translate', label: '翻译', icon: Languages },
     { key: 'ai', label: 'AI', icon: Sparkles },
   ];
 
   return (
-    <aside className={`reader-sidebar ${tab === 'ai' ? 'ai-open' : ''}`}>
+    <aside className={`reader-sidebar ${tab === 'ai' ? 'ai-open' : ''} ${tab === 'translate' ? 'translate-open' : ''}`}>
       <div className="sidebar-tabs">
         {tabs.map(({ key, label, icon: Icon, count }) => (
           <button key={key} className={`sidebar-tab ${tab === key ? 'active' : ''} ${key === 'ai' ? 'ai-tab' : ''}`} onClick={() => onTab(key)}>
@@ -91,6 +94,15 @@ export function ReaderSidebar(props: Props) {
             onAsk={props.onAskNote}
           />
         )}
+        {tab === 'translate' && (
+          <TranslationPanel
+            book={props.book}
+            doc={props.doc}
+            page={props.currentPage}
+            pageCount={props.pageCount}
+            onJump={props.onJumpPanel}
+          />
+        )}
         {tab === 'ai' && (
           <AIPanel
             book={props.book}
@@ -108,7 +120,7 @@ export function ReaderSidebar(props: Props) {
         )}
       </div>
 
-      {tab !== 'ai' && (
+      {tab !== 'ai' && tab !== 'translate' && (
         <div className="sidebar-foot">
           <span>← → 翻页</span>
           <span>选中文字即可划线</span>
