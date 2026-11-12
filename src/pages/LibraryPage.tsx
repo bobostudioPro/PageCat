@@ -13,14 +13,6 @@ import { Modal } from '../components/ui/Modal';
 import type { Book } from '../types';
 import { rerange } from '../lib/utils';
 
-const quotes = [
-  '读书是在别人的思想里，修建自己的房间。',
-  '划线是给未来的自己，留一盏小灯。',
-  '有些书用来读完，有些书用来反复回去。',
-  '一间书房最好的装饰，是读到一半的书。',
-  '慢一点读，字里行间才有回声。',
-];
-
 function greeting() {
   const h = new Date().getHours();
   if (h < 5) return '夜深了';
@@ -109,7 +101,6 @@ export function LibraryPage() {
     () => (books.length ? books.reduce((sum, b) => sum + (b.percent ?? 0), 0) / books.length : 0),
     [books],
   );
-  const quote = quotes[new Date().getDate() % quotes.length];
 
   const requestOpen = (book: Book) => {
     if (opening) return;
@@ -214,8 +205,6 @@ export function LibraryPage() {
             <h1>
               {greeting()}，<em>读书人</em>。
             </h1>
-            <p className="hero-lede">把 PDF 放上书架，划线、记笔记，和 AI 一起读。</p>
-            <p className="hero-quote">“{quote}”</p>
             <div className="hero-stats">
               <div>
                 <strong>{books.length}</strong>
@@ -258,12 +247,12 @@ export function LibraryPage() {
                     第 {recent.lastPage ?? 1} / {recent.pageCount} 页 · {rerange(recent.percent ?? 0)}
                   </span>
                 </div>
+                <button className="continue-action" onClick={() => requestOpen(recent)}>
+                  <BookOpen size={14} />
+                  {recent.percent ? '接着读' : '翻开'}
+                  <ArrowRight size={14} className="arrow" />
+                </button>
               </div>
-              <button className="continue-action" onClick={() => requestOpen(recent)}>
-                <BookOpen size={15} />
-                {recent.percent ? '接着读' : '翻开'}
-                <ArrowRight size={15} className="arrow" />
-              </button>
             </aside>
           )}
         </section>

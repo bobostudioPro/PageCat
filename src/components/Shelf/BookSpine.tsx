@@ -35,7 +35,7 @@ function labelWeight(text: string) {
 function shortenSpineTitle(raw: string) {
   const cleaned = raw.replace(/\s+/g, ' ').replace(/\s*[:：]\s*.*$/, '').trim();
   const chars = [...cleaned];
-  const maxWeight = 17;
+  const maxWeight = 19;
   let out = '';
   let weight = 0;
   for (const ch of chars) {
@@ -52,15 +52,15 @@ export function BookSpine({ book, shelfIndex, pulling, draggable, dragging, reor
   const longPressed = useRef(false);
   const [tip, setTip] = useState<Tip | null>(null);
   const sizeSeed = [...book.id].reduce((n, ch) => n + ch.charCodeAt(0), 0);
-  const height = 218 + ((sizeSeed + book.pageCount) % 4) * 14;
-  const width = 46 + ((sizeSeed + book.title.length) % 4) * 5;
+  const height = 220 + ((sizeSeed + book.pageCount) % 3) * 12;
+  const width = 54 + ((sizeSeed + book.title.length) % 4) * 6;
   const accent = book.spineColor || book.accent || '#7b3f52';
   const title = book.titleZh || book.title;
   const author = book.authorZh || book.author;
   const progress = book.percent ?? 0;
   const spineLabel = SAMPLE_SPINE_TITLES[book.id] || shortenSpineTitle(title);
   const spineWeight = labelWeight(spineLabel);
-  const spineTitleClass = spineWeight > 15 ? 'xsmall' : spineWeight > 12 ? 'small' : '';
+  const spineTitleClass = spineWeight > 17 ? 'xsmall' : spineWeight > 14 ? 'small' : '';
 
   const clearTimer = () => {
     if (timer.current) {
