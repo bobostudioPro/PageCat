@@ -24,9 +24,40 @@ body,
 }
 
 .reader.theme-sepia {
-  --room-bg: #2a2118;
-  --room-glow: rgba(255, 183, 96, 0.16);
-  --page-bg: #fbf3e2;
+  --room-bg: #302217;
+  --room-glow: rgba(255, 186, 100, 0.26);
+  --page-bg: #f1dcb4;
+  --sidebar-bg: #f2e2c8;
+  --sidebar-ink: #3b2a18;
+  --sidebar-muted: #8b7050;
+  --sidebar-line: rgba(105, 72, 36, 0.18);
+  --sidebar-soft: rgba(255, 250, 238, 0.55);
+}
+
+.theme-sepia .reader-topbar {
+  background: linear-gradient(180deg, rgba(41, 28, 17, 0.98), rgba(38, 25, 15, 0.92));
+  border-bottom-color: rgba(236, 199, 140, 0.16);
+}
+
+.theme-sepia .reader-scroll {
+  background:
+    radial-gradient(ellipse 60% 40% at 50% 2%, rgba(255, 192, 112, 0.3), transparent 66%),
+    radial-gradient(ellipse 100% 70% at 50% 116%, rgba(0, 0, 0, 0.64), transparent 72%),
+    linear-gradient(180deg, #382619, #1b120b);
+}
+
+.theme-sepia .reader-sidebar {
+  background:
+    linear-gradient(90deg, rgba(120, 80, 40, 0.045), transparent 14%),
+    linear-gradient(180deg, #f7ead6, #f1e1c7);
+  border-left-color: rgba(100, 68, 34, 0.24);
+  box-shadow:
+    -24px 0 55px -34px rgba(0, 0, 0, 0.55),
+    inset 1px 0 0 rgba(255, 246, 228, 0.45);
+}
+
+.theme-sepia .sidebar-tabs {
+  background: linear-gradient(180deg, rgba(255, 246, 230, 0.65), transparent);
 }
 
 .reader.theme-night {
@@ -323,8 +354,41 @@ body,
   transition: filter 0.45s var(--ease);
 }
 
+.theme-sepia .pdf-page {
+  background: var(--page-bg);
+  box-shadow:
+    0 40px 84px -30px rgba(0, 0, 0, 0.82),
+    0 12px 30px -12px rgba(0, 0, 0, 0.55),
+    0 0 90px rgba(232, 164, 84, 0.14),
+    inset 0 0 100px rgba(110, 70, 30, 0.16),
+    0 0 0 1px rgba(118, 78, 38, 0.28);
+}
+
+.theme-sepia .pdf-page::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  opacity: 0.72;
+  background:
+    radial-gradient(ellipse 28% 18% at 22% 28%, rgba(157, 105, 49, 0.07), transparent 72%),
+    radial-gradient(ellipse 24% 30% at 78% 68%, rgba(145, 96, 44, 0.06), transparent 72%),
+    radial-gradient(ellipse 20% 14% at 58% 88%, rgba(157, 105, 49, 0.05), transparent 72%),
+    radial-gradient(ellipse 74% 38% at 50% 0%, rgba(255, 236, 192, 0.32), transparent 72%),
+    radial-gradient(ellipse 106% 100% at 50% 52%, transparent 54%, rgba(100, 60, 26, 0.2) 100%),
+    repeating-linear-gradient(0deg, rgba(104, 66, 30, 0.03) 0 1px, transparent 1px 4px),
+    repeating-linear-gradient(90deg, rgba(255, 246, 226, 0.025) 0 1px, transparent 1px 5px);
+  mix-blend-mode: multiply;
+}
+
+.theme-sepia .pdf-page::after {
+  opacity: 0.5;
+  mix-blend-mode: multiply;
+}
+
 .theme-sepia .pdf-canvas {
-  filter: sepia(0.2) brightness(0.99) contrast(1.01);
+  filter: sepia(0.42) saturate(0.8) brightness(0.95) contrast(1.03);
 }
 
 .theme-night .pdf-canvas {

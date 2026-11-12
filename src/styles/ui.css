@@ -193,7 +193,10 @@
 }
 
 .theme-swatch.sepia {
-  background: linear-gradient(135deg, #f3e3c5, #ddc39a);
+  background:
+    radial-gradient(ellipse 80% 80% at 50% 0%, #f9ecd5, transparent 72%),
+    linear-gradient(135deg, #f0dcb8, #d7b88a);
+  box-shadow: inset 0 0 14px rgba(110, 72, 34, 0.12);
 }
 
 .theme-swatch.night {
@@ -487,9 +490,30 @@
 }
 
 .theme-preview-sepia {
-  background: #f6e5c5;
+  background:
+    radial-gradient(ellipse 82% 82% at 50% 0%, rgba(255, 243, 216, 0.9), transparent 70%),
+    radial-gradient(ellipse 40% 30% at 18% 80%, rgba(160, 108, 52, 0.08), transparent 72%),
+    linear-gradient(135deg, #f3dfba, #ddbd8f);
   color: #3a2a18;
-  border-color: rgba(150, 108, 58, 0.35);
+  border-color: rgba(140, 95, 46, 0.38);
+  box-shadow:
+    inset 0 0 44px rgba(120, 78, 38, 0.12),
+    inset 0 0 0 1px rgba(255, 248, 235, 0.35);
+}
+
+.theme-preview-sepia::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 104% 100% at 50% 54%, transparent 56%, rgba(113, 72, 32, 0.15) 100%),
+    repeating-linear-gradient(0deg, rgba(110, 72, 34, 0.02) 0 1px, transparent 1px 4px);
+  mix-blend-mode: multiply;
+}
+
+.theme-preview-sepia::after {
+  opacity: 0.52;
 }
 
 .theme-preview-night {
