@@ -239,13 +239,21 @@ export function ReaderPage() {
     const top = Math.max(62, rect.top);
     const height = Math.min(rect.height, window.innerHeight - top - 8);
     if (height < 120 || rect.width < 80) return;
+    const canvas = pageEl.querySelector<HTMLCanvasElement>('canvas');
+    let image: string | undefined;
+    try {
+      image = canvas?.toDataURL('image/jpeg', 0.84);
+    } catch {
+      image = undefined;
+    }
     if (pageTurnTimer.current) window.clearTimeout(pageTurnTimer.current);
     setPageTurn({
       id: Date.now(),
       direction,
+      image,
       rect: { left: rect.left, top, width: rect.width, height },
     });
-    pageTurnTimer.current = window.setTimeout(() => setPageTurn(null), 700);
+    pageTurnTimer.current = window.setTimeout(() => setPageTurn(null), 1250);
   };
 
   // Restore last position once the first page's dimensions are known.
