@@ -13,6 +13,15 @@ import { Modal } from '../components/ui/Modal';
 import type { Book } from '../types';
 import { rerange } from '../lib/utils';
 
+function greeting() {
+  const h = new Date().getHours();
+  if (h < 5) return '夜深了';
+  if (h < 11) return '早上好';
+  if (h < 14) return '午安';
+  if (h < 18) return '下午好';
+  return '晚上好';
+}
+
 function today() {
   return new Intl.DateTimeFormat('zh-CN', { month: 'long', day: 'numeric', weekday: 'long' }).format(new Date());
 }
@@ -193,6 +202,9 @@ export function LibraryPage() {
         <section className="hero">
           <div className="hero-copy">
             <p className="hero-kicker">{today()}</p>
+            <h1>
+              {greeting()}，<em>读书人</em>。
+            </h1>
             <div className="hero-stats">
               <div>
                 <strong>{books.length}</strong>
