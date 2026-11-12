@@ -2616,3 +2616,34 @@
     display: none;
   }
 }
+
+/* Decorations placed on top of the bookcase */
+.bookcase-top-decor {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% - 2px);
+  height: 190px;
+  z-index: 8;
+  pointer-events: none;
+}
+
+.bookcase-top-drop {
+  position: absolute;
+  left: -20px;
+  right: -20px;
+  bottom: calc(100% - 10px);
+  height: 198px;
+  z-index: 14;
+  pointer-events: none;
+}
+
+.bookcase-top-drop.active {
+  pointer-events: auto;
+}
+
+.decor-drop-marker.top {
+  top: auto;
+  bottom: 0;
+  height: 64px;
+}

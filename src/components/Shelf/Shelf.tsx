@@ -22,13 +22,17 @@ type Props = {
 type DropTarget = { row: number; index: number; left: number };
 
 type DecorKind = 'cat' | 'plant';
-type DecorPlacement = { row: number | null; x: number };
+type DecorPlacement = { row: number | null; x: number; surface?: 'shelf' | 'top' };
 type DecorStore = { cat: DecorPlacement; plant: DecorPlacement };
+type DecorTarget =
+  | { surface: 'shelf'; row: number; x: number }
+  | { surface: 'top'; x: number };
+type DecorDrop = DecorTarget & { kind: DecorKind };
 
 const DECOR_KEY = 'pagecat.shelfDecor.v1';
 const defaultDecor: DecorStore = {
-  cat: { row: 0, x: 82 },
-  plant: { row: null, x: 80 },
+  cat: { row: 0, x: 82, surface: 'shelf' },
+  plant: { row: null, x: 80, surface: 'shelf' },
 };
 
 function clampDecorX(x: number) {
@@ -44,10 +48,12 @@ function loadDecor(): DecorStore {
       cat: {
         row: Number.isInteger(parsed.cat?.row) ? Number(parsed.cat?.row) : 0,
         x: clampDecorX(Number(parsed.cat?.x ?? defaultDecor.cat.x)),
+        surface: parsed.cat?.surface === 'top' ? 'top' : 'shelf',
       },
       plant: {
         row: Number.isInteger(parsed.plant?.row) ? Number(parsed.plant?.row) : null,
         x: clampDecorX(Number(parsed.plant?.x ?? defaultDecor.plant.x)),
+        surface: parsed.plant?.surface === 'top' ? 'top' : 'shelf',
       },
     };
   } catch {
@@ -106,7 +112,7 @@ export function Shelf({
   const justDragged = useRef(false);
   const [decor, setDecor] = useState<DecorStore>(loadDecor);
   const [decorDrag, setDecorDrag] = useState<DecorKind | null>(null);
-  const [decorDrop, setDecorDrop] = useState<{ row: number; x: number; kind: DecorKind } | null>(null);
+  const [decorDrop, setDecorDrop] = useState<DecorDrop | null>(null);
   const decorDragRef = useRef<DecorKind | null>(null);
 
   const canDrag = !query.trim() && layout.wide;
@@ -145,15 +151,23 @@ export function Shelf({
     });
   }
 
-  const catRow = Math.min(rows.length - 1, Math.max(0, decor.cat.row ?? 0));
-  const plantRow = Math.min(rows.length - 1, Math.max(0, decor.plant.row ?? rows.length - 1));
+  const catOnTop = decor.cat.surface === 'top';
+  const plantOnTop = decor.plant.surface === 'top';
+  const catRow = catOnTop ? -1 : Math.min(rows.length - 1, Math.max(0, decor.cat.row ?? 0));
+  const plantRow = plantOnTop ? -1 : Math.min(rows.length - 1, Math.max(0, decor.plant.row ?? rows.length - 1));
 
   useEffect(() => {
     if (query.trim()) return;
     setDecor((prev) => {
       const last = rows.length - 1;
-      const nextCatRow = Math.max(0, Math.min(prev.cat.row ?? 0, last));
-      const nextPlantRow = prev.plant.row == null ? null : Math.max(0, Math.min(prev.plant.row, last));
+      const nextCatRow =
+        prev.cat.surface === 'top' ? prev.cat.row : Math.max(0, Math.min(prev.cat.row ?? 0, last));
+      const nextPlantRow =
+        prev.plant.surface === 'top'
+          ? prev.plant.row
+          : prev.plant.row == null
+            ? null
+            : Math.max(0, Math.min(prev.plant.row, last));
       if (nextCatRow === prev.cat.row && nextPlantRow === prev.plant.row) return prev;
       const next = {
         cat: { ...prev.cat, row: nextCatRow },
@@ -187,8 +201,12 @@ export function Shelf({
     e.dataTransfer.setData('text/plain', `decor:${kind}`);
   };
 
-  const placeDecor = (kind: DecorKind, row: number, x: number) => {
-    const next: DecorStore = { ...decor, [kind]: { row, x: clampDecorX(x) } };
+  const placeDecor = (kind: DecorKind, target: DecorTarget) => {
+    const placement: DecorPlacement =
+      target.surface === 'top'
+        ? { surface: 'top', row: null, x: clampDecorX(target.x) }
+        : { surface: 'shelf', row: target.row, x: clampDecorX(target.x) };
+    const next: DecorStore = { ...decor, [kind]: placement };
     setDecor(next);
     saveDecor(next);
   };
@@ -263,9 +281,16 @@ export function Shelf({
     return { row, index: last.index + 1, left: last.rect.right - rowRect.left + 6 };
   };
 
-  const computeDecorDrop = (clientX: number, clientY: number) => {
+  const computeDecorDrop = (clientX: number, clientY: number): DecorTarget | null => {
     const body = bodyRef.current;
     if (!body) return null;
+    const bookcase = body.closest('.bookcase') as HTMLElement | null;
+    const bookcaseRect = bookcase?.getBoundingClientRect();
+    const bodyRect = body.getBoundingClientRect();
+    if (bookcaseRect && clientY <= bodyRect.top && clientY >= bookcaseRect.top - 198) {
+      const x = clampDecorX(((clientX - bookcaseRect.left) / bookcaseRect.width) * 100);
+      return { surface: 'top', x };
+    }
     const rowElements = [...body.querySelectorAll<HTMLElement>('.shelf-row')];
     if (!rowElements.length) return null;
     const rects = rowElements.map((row) => row.getBoundingClientRect());
@@ -281,7 +306,7 @@ export function Shelf({
       );
     }
     const x = clampDecorX(((clientX - rects[row].left) / rects[row].width) * 100);
-    return { row, x };
+    return { surface: 'shelf', row, x };
   };
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
@@ -289,7 +314,10 @@ export function Shelf({
       e.preventDefault();
       e.dataTransfer.dropEffect = 'move';
       const target = computeDecorDrop(e.clientX, e.clientY);
-      if (target) setDecorDrop({ ...target, kind: decorDragRef.current });
+      if (target) {
+        const kind = decorDragRef.current;
+        setDecorDrop(target.surface === 'top' ? { ...target, kind } : { ...target, kind });
+      }
       return;
     }
     if (!dragIdRef.current) return;
@@ -317,7 +345,7 @@ export function Shelf({
       e.preventDefault();
       const kind = decorDragRef.current;
       const target = computeDecorDrop(e.clientX, e.clientY);
-      if (target) placeDecor(kind, target.row, target.x);
+      if (target) placeDecor(kind, target);
       finishDecorDrag();
       return;
     }
@@ -355,6 +383,42 @@ export function Shelf({
       className={cn('bookcase', filtered.length === 0 && 'empty', (dragId || decorDrag) && 'reordering')}
       aria-label="我的书架"
     >
+      {!query && (catOnTop || plantOnTop || decorDrop?.surface === 'top') && (
+        <div className="bookcase-top-decor">
+          {catOnTop && (
+            <ShelfCat
+              x={decor.cat.x}
+              movable={layout.wide}
+              dragging={decorDrag === 'cat'}
+              onMoveStart={(event) => handleDecorDragStart('cat', event)}
+              onMoveEnd={finishDecorDrag}
+              dragActive={dragActive}
+            />
+          )}
+          {plantOnTop && (
+            <ShelfDecor
+              x={decor.plant.x}
+              movable={layout.wide}
+              dragging={decorDrag === 'plant'}
+              onMoveStart={(event) => handleDecorDragStart('plant', event)}
+              onMoveEnd={finishDecorDrag}
+            />
+          )}
+          {decorDrop?.surface === 'top' && (
+            <span className={cn('decor-drop-marker top', decorDrop.kind)} style={{ left: `${decorDrop.x}%` }} aria-hidden="true">
+              <em>{decorDrop.kind === 'cat' ? '猫' : '盆栽'}</em>
+            </span>
+          )}
+        </div>
+      )}
+      {decorDrag && (
+        <div
+          className="bookcase-top-drop active"
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        />
+      )}
       <div className="bookcase-crown">
         <span className="crown-plate">
           <span className="crown-cat">⌂</span>
@@ -394,12 +458,12 @@ export function Shelf({
                   />
                 ))}
                 {drop?.row === rowIndex && <span className="shelf-drop-line" style={{ left: drop.left }} aria-hidden="true" />}
-                {decorDrop?.row === rowIndex && (
+                {decorDrop?.surface === 'shelf' && decorDrop.row === rowIndex && (
                   <span className={cn('decor-drop-marker', decorDrop.kind)} style={{ left: `${decorDrop.x}%` }} aria-hidden="true">
                     <em>{decorDrop.kind === 'cat' ? '猫' : '盆栽'}</em>
                   </span>
                 )}
-                {!query && catRow === rowIndex && (
+                {!query && !catOnTop && catRow === rowIndex && (
                   <ShelfCat
                     x={decor.cat.x}
                     movable={layout.wide}
@@ -424,7 +488,7 @@ export function Shelf({
                   </div>
                 )}
                 {isLast && !query && <UploadSlot onUpload={onUpload} />}
-                {!query && plantRow === rowIndex && (
+                {!query && !plantOnTop && plantRow === rowIndex && (
                   <ShelfDecor
                     x={decor.plant.x}
                     movable={layout.wide}
