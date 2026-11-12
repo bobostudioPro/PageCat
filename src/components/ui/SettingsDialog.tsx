@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Check, Eye, EyeOff, Lamp, Loader2, Sparkles, Trash2 } from 'lucide-react';
 import { Modal } from './Modal';
 import { useSettings } from '../../state/settings';
@@ -23,10 +23,15 @@ export function SettingsDialog({ open, onClose }: Props) {
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ ok: boolean; text: string } | null>(null);
   const [confirmClear, setConfirmClear] = useState(false);
+  const originalTheme = useRef<Settings['readerTheme']>('paper');
+  const saved = useRef(false);
 
   useEffect(() => {
     if (open) {
-      setDraft({ ...useSettings.getState() });
+      const current = useSettings.getState();
+      setDraft({ ...current });
+      originalTheme.current = current.readerTheme;
+      saved.current = false;
       setTestResult(null);
       setConfirmClear(false);
       setShowKey(false);
@@ -47,7 +52,21 @@ export function SettingsDialog({ open, onClose }: Props) {
     setTestResult(null);
   };
 
+  const handleClose = () => {
+    if (!saved.current) {
+      useSettings.getState().update({ readerTheme: originalTheme.current });
+    }
+    onClose();
+  };
+
+  const chooseTheme = (key: Settings['readerTheme']) => {
+    setField('readerTheme', key);
+    // Apply immediately so the reader (and the preview below) changes live.
+    useSettings.getState().update({ readerTheme: key });
+  };
+
   const save = () => {
+    saved.current = true;
     settings.update({
       aiProvider: draft.aiProvider,
       aiBaseUrl: draft.aiBaseUrl.trim(),
@@ -91,7 +110,7 @@ export function SettingsDialog({ open, onClose }: Props) {
   return (
     <Modal
       open={open}
-      onClose={onClose}
+      onClose={handleClose}
       title="书房设置"
       subtitle="钥匙与灯光都放在这里，只保存在你自己的浏览器。"
       wide
@@ -104,7 +123,7 @@ export function SettingsDialog({ open, onClose }: Props) {
             </span>
             <div>
               <h3>AI 阅读助手</h3>
-              <p>不填密钥也能用：本地速读会抽取摘要、找原文、生成思考题。填入兼容接口后，就能真正对话分析。</p>
+              <p>不填密钥也能用：本地速读会抽取摘要、找原文、生成思考题，并支持多会话与 @ 引用。填入兼容接口后，就能真正对话分析。</p>
             </div>
           </div>
 
@@ -176,6 +195,7 @@ export function SettingsDialog({ open, onClose }: Props) {
 
           <div className="privacy-note">
             密钥存放在浏览器的 localStorage，请求由你的浏览器直接发往所填接口。请只在私人设备上使用。
+            未填写密钥时，本地速读的知识卡会向维基百科发起一次查询；书名、正文和笔记不会发送。
           </div>
         </section>
 
@@ -192,7 +212,8 @@ export function SettingsDialog({ open, onClose }: Props) {
               <button
                 key={theme.key}
                 className={`theme-card ${draft.readerTheme === theme.key ? 'active' : ''}`}
-                onClick={() => setField('readerTheme', theme.key)}
+                aria-pressed={draft.readerTheme === theme.key}
+                onClick={() => chooseTheme(theme.key)}
               >
                 <span className={`theme-swatch ${theme.key}`} />
                 <span className="theme-label">{theme.label}</span>
@@ -200,6 +221,14 @@ export function SettingsDialog({ open, onClose }: Props) {
               </button>
             ))}
           </div>
+          <div className={`theme-preview theme-preview-${draft.readerTheme}`}>
+            <span className="theme-preview-kicker">LIVE PREVIEW</span>
+            <p>读书是在别人的思想里，修建自己的房间。</p>
+            <span className="theme-preview-meta">第 12 页 · PageCat 书房</span>
+          </div>
+          <button className="btn btn-quiet theme-reset" onClick={() => chooseTheme('paper')}>
+            跟随默认纸白
+          </button>
         </section>
 
         <section className="settings-section danger">
@@ -231,7 +260,7 @@ export function SettingsDialog({ open, onClose }: Props) {
       </div>
 
       <div className="modal-foot settings-foot">
-        <button className="btn btn-quiet" onClick={onClose}>
+        <button className="btn btn-quiet" onClick={handleClose}>
           取消
         </button>
         <button className="btn btn-brass" onClick={save}>

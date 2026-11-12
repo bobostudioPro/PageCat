@@ -827,6 +827,59 @@
   transform: translate(-50%, 0);
 }
 
+
+.spine-tooltip-portal {
+  position: fixed;
+  z-index: 500;
+  display: flex;
+  gap: 10px;
+  width: 218px;
+  padding: 9px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #fbf3e4, #f0e2cb);
+  box-shadow: 0 24px 44px -18px rgba(0, 0, 0, 0.8), inset 0 0 0 1px rgba(120, 82, 44, 0.14);
+  pointer-events: none;
+  transform: translate(-50%, -100%);
+  animation: tip-in 0.2s var(--ease) both;
+  color: var(--ink);
+}
+
+.spine-tooltip-portal.below {
+  transform: translate(-50%, 0);
+  animation-name: tip-in-below;
+}
+
+.spine-tooltip-portal::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -5px;
+  width: 10px;
+  height: 10px;
+  transform: translateX(-50%) rotate(45deg);
+  background: #f2e4ce;
+  box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+.spine-tooltip-portal.below::after {
+  top: -5px;
+  bottom: auto;
+}
+
+@keyframes tip-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-100% + 6px));
+  }
+}
+
+@keyframes tip-in-below {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -6px);
+  }
+}
+
 .tip-cover {
   flex: none;
   width: 42px;

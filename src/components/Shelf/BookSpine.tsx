@@ -1,4 +1,5 @@
-import { useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import type { Book } from '../../types';
 import { cn, rerange } from '../../lib/utils';
 
@@ -11,9 +12,12 @@ type Props = {
   searchMatch?: boolean;
 };
 
+type Tip = { left: number; top: number; below: boolean };
+
 export function BookSpine({ book, index, pulling, onOpen, onContext }: Props) {
   const timer = useRef<number | null>(null);
   const longPressed = useRef(false);
+  const [tip, setTip] = useState<Tip | null>(null);
   const height = 218 + ((index * 17 + book.pageCount) % 4) * 14;
   const width = 46 + ((book.title.length + index) % 4) * 5;
   const accent = book.spineColor || book.accent || '#7b3f52';
@@ -28,6 +32,29 @@ export function BookSpine({ book, index, pulling, onOpen, onContext }: Props) {
     }
   };
 
+  const showTip = (el: HTMLElement) => {
+    if (!window.matchMedia('(hover: hover)').matches) return;
+    const rect = el.getBoundingClientRect();
+    const tipWidth = 218;
+    const left = Math.min(
+      window.innerWidth - tipWidth / 2 - 12,
+      Math.max(tipWidth / 2 + 12, rect.left + rect.width / 2),
+    );
+    const below = rect.top < 150;
+    setTip({ left, top: below ? rect.bottom + 10 : rect.top - 12, below });
+  };
+
+  useEffect(() => {
+    if (!tip) return;
+    const hide = () => setTip(null);
+    window.addEventListener('scroll', hide, true);
+    window.addEventListener('resize', hide);
+    return () => {
+      window.removeEventListener('scroll', hide, true);
+      window.removeEventListener('resize', hide);
+    };
+  }, [tip]);
+
   return (
     <div className="spine-wrap" style={{ '--h': `${height}px`, '--w': `${width}px` } as React.CSSProperties}>
       <button
@@ -35,14 +62,20 @@ export function BookSpine({ book, index, pulling, onOpen, onContext }: Props) {
         style={{ '--accent': accent } as React.CSSProperties}
         aria-label={`打开《${title}》`}
         onClick={() => {
+          setTip(null);
           if (longPressed.current) {
             longPressed.current = false;
             return;
           }
           onOpen(book);
         }}
+        onMouseEnter={(e) => showTip(e.currentTarget)}
+        onMouseLeave={() => setTip(null)}
+        onFocus={(e) => showTip(e.currentTarget)}
+        onBlur={() => setTip(null)}
         onContextMenu={(e) => {
           e.preventDefault();
+          setTip(null);
           onContext(book, e.clientX, e.clientY);
         }}
         onPointerDown={(e) => {
@@ -51,6 +84,7 @@ export function BookSpine({ book, index, pulling, onOpen, onContext }: Props) {
           clearTimer();
           timer.current = window.setTimeout(() => {
             longPressed.current = true;
+            setTip(null);
             onContext(book, e.clientX, e.clientY);
           }, 620);
         }}
@@ -59,6 +93,7 @@ export function BookSpine({ book, index, pulling, onOpen, onContext }: Props) {
         onKeyDown={(e) => {
           if (e.shiftKey && e.key === 'F10') {
             e.preventDefault();
+            setTip(null);
             const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
             onContext(book, rect.left + rect.width / 2, rect.top + 40);
           }
@@ -79,17 +114,31 @@ export function BookSpine({ book, index, pulling, onOpen, onContext }: Props) {
         )}
         {progress > 0 && <span className="spine-ribbon" style={{ height: `${18 + progress * 26}px` }} aria-hidden="true" />}
       </button>
-      <div className="spine-tooltip" role="presentation">
-        <div className="tip-cover" style={{ backgroundImage: book.cover ? `url("${book.cover}")` : undefined, backgroundColor: book.cover ? undefined : accent }}>
-          {!book.cover && <span>{title.slice(0, 2)}</span>}
-        </div>
-        <div className="tip-body">
-          <span className="tip-kicker">{book.genre || '藏书'}</span>
-          <strong>{title}</strong>
-          <span className="tip-author">{author}</span>
-          <span className="tip-progress">{progress > 0 ? `已读 ${rerange(progress)}` : '还没翻开'}</span>
-        </div>
-      </div>
+      {tip &&
+        createPortal(
+          <div
+            className={cn('spine-tooltip-portal', tip.below && 'below')}
+            style={{ left: tip.left, top: tip.top }}
+            role="tooltip"
+          >
+            <div
+              className="tip-cover"
+              style={{
+                backgroundImage: book.cover ? `url("${book.cover}")` : undefined,
+                backgroundColor: book.cover ? undefined : accent,
+              }}
+            >
+              {!book.cover && <span>{title.slice(0, 2)}</span>}
+            </div>
+            <div className="tip-body">
+              <span className="tip-kicker">{book.genre || '藏书'}</span>
+              <strong>{title}</strong>
+              <span className="tip-author">{author}</span>
+              <span className="tip-progress">{progress > 0 ? `已读 ${rerange(progress)}` : '还没翻开'}</span>
+            </div>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }

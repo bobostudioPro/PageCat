@@ -75,6 +75,14 @@ export type OutlineItem = {
 
 export type ChatRole = 'user' | 'assistant';
 
+export type AiReference =
+  | { key: string; type: 'page'; page: number }
+  | { key: string; type: 'book' }
+  | { key: string; type: 'highlight'; refId: string; page: number; text: string }
+  | { key: string; type: 'note'; refId: string; page: number; text: string; quote?: string }
+  | { key: string; type: 'paragraph'; page: number; text: string; index: number }
+  | { key: string; type: 'selection'; page: number; text: string };
+
 export type ChatMessage = {
   id: string;
   role: ChatRole;
@@ -82,11 +90,21 @@ export type ChatMessage = {
   createdAt: number;
   mode?: 'local' | 'online';
   error?: boolean;
+  references?: AiReference[];
 };
 
 export type BookChat = {
   bookId: string;
   messages: ChatMessage[];
+  updatedAt: number;
+};
+
+export type ChatSession = {
+  id: string;
+  bookId: string;
+  title: string;
+  messages: ChatMessage[];
+  createdAt: number;
   updatedAt: number;
 };
 

@@ -13,6 +13,10 @@ function corpusFor(context: AiContext): Sentence[] {
     for (const p of context.digest) byPage.set(p.page, p.text);
     if (context.currentPageText) byPage.set(context.page, context.currentPageText);
   }
+  for (const ref of context.references) {
+    if (!('text' in ref) || !ref.text) continue;
+    byPage.set(ref.page, `${byPage.get(ref.page) ?? ''} ${ref.text}`);
+  }
   const out: Sentence[] = [];
   for (const [page, text] of byPage) {
     for (const sentence of splitSentences(text)) out.push({ text: sentence, page });
@@ -162,9 +166,57 @@ ${keywordLine(context)}
 > 离线速读适合快速找原文、看关键词。要讨论观点、写作手法或章节脉络，请在设置里接入大模型。`;
 }
 
+
+function referencesAnswer(context: AiContext) {
+  const lines: string[] = [];
+  const texts: { page: number; text: string }[] = [];
+  for (const ref of context.references) {
+    if (ref.type === 'book') {
+      lines.push('- 整本书（抽样阅读）');
+    } else if (ref.type === 'page') {
+      const pageText = context.contextPages.find((p) => p.page === ref.page)?.text ?? context.digest.find((p) => p.page === ref.page)?.text ?? '';
+      lines.push(`- 第 ${ref.page} 页 ${cite(ref.page)}`);
+      if (pageText) texts.push({ page: ref.page, text: pageText });
+    } else if (ref.type === 'highlight') {
+      lines.push(`> ${clip(ref.text, 260)}\n>\n> 你的划线 ${cite(ref.page)}`);
+      texts.push({ page: ref.page, text: ref.text });
+    } else if (ref.type === 'note') {
+      lines.push(`- 你的笔记 ${cite(ref.page)}：${clip(ref.text, 260)}${ref.quote ? `\n  > 原文：「${clip(ref.quote, 180)}」` : ''}`);
+      texts.push({ page: ref.page, text: `${ref.text} ${ref.quote ?? ''}` });
+    } else if (ref.type === 'paragraph') {
+      lines.push(`> ${clip(ref.text, 360)}\n>\n> 第 ${ref.page} 页 · 第 ${ref.index + 1} 段 ${cite(ref.page)}`);
+      texts.push({ page: ref.page, text: ref.text });
+    } else {
+      lines.push(`> ${clip(ref.text, 360)}\n>\n> 选中原文 ${cite(ref.page)}`);
+      texts.push({ page: ref.page, text: ref.text });
+    }
+  }
+  if (context.scope === 'book' && !texts.length) {
+    for (const page of context.digest.slice(0, 3)) texts.push(page);
+  }
+  const body = texts.map((t) => t.text).join(' ');
+  const terms = topTerms(body, 7);
+  const quotes = bestSentences(splitSentences(body), 3);
+  return `**你引用的内容**
+
+${lines.join('\n\n')}
+
+**可以怎样读**
+
+${quotes.map((q) => `- ${clip(q, 240)}`).join('\n') || '- 这段内容较短，先注意它的措辞与语气。'}
+
+**关键词**
+${terms.map((t) => `「${t.term}」`).join('　') || '没有明显的高频词。'}
+
+> 本地速读只做文本层面的梳理，不等同于大模型的语义分析。想讨论隐喻、论证与写作意图，可以接入大模型。`;
+}
+
 export function localAnswer(question: string, context: AiContext): string {
   const sentences = corpusFor(context);
   const intent = detectIntent(question);
+  if (context.references.length && /引用|这些内容|这条划线|这条笔记|这段话|这段文字|分析/.test(question)) {
+    return referencesAnswer(context);
+  }
   switch (intent) {
     case 'summary':
       return summaryAnswer(context, sentences);

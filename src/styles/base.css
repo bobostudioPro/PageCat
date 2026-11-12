@@ -108,6 +108,33 @@ img {
 }
 
 /* ---------- Buttons ---------- */
+.btn,
+.icon-btn,
+.rt-icon,
+.tb-btn,
+.hc-icon,
+.ai-icon,
+.sidebar-close,
+.modal-close,
+.tb-color,
+.search-clear {
+  line-height: 0;
+}
+
+.btn svg,
+.icon-btn svg,
+.rt-icon svg,
+.tb-btn svg,
+.hc-icon svg,
+.ai-icon svg,
+.sidebar-close svg,
+.modal-close svg,
+.tb-color svg,
+.search-clear svg {
+  display: block;
+  flex: none;
+}
+
 .btn {
   display: inline-flex;
   align-items: center;
@@ -176,6 +203,7 @@ img {
   justify-content: center;
   width: 38px;
   height: 38px;
+  line-height: 0;
   border-radius: 12px;
   color: var(--ink-2);
   transition: background 0.2s, color 0.2s, transform 0.2s var(--ease);

@@ -57,7 +57,7 @@ export function SelectionToolbar({ selection, onHighlight, onUnderline, onFavori
       <button className="tb-btn" onClick={onNote} title="写笔记" aria-label="写笔记">
         <NotebookPen size={15} />
       </button>
-      <button className="tb-btn accent" onClick={onAsk} title="问 AI" aria-label="问 AI">
+      <button className="tb-btn accent" onClick={onAsk} title="分析这段 / 问 AI" aria-label="分析这段或问 AI">
         <Sparkles size={15} />
       </button>
       <span className="tb-divider" />

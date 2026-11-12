@@ -1,4 +1,4 @@
-import type { Annotation, Book, Note, OutlineItem } from '../../types';
+import type { AiReference, Annotation, Book, Note, OutlineItem } from '../../types';
 
 export type AiContext = {
   book: Book;
@@ -12,6 +12,7 @@ export type AiContext = {
   notes: Note[];
   toc: OutlineItem[];
   scope: 'page' | 'book';
+  references: AiReference[];
 };
 
 export type AiReply = {

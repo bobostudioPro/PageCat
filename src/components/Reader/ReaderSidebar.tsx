@@ -4,7 +4,7 @@ import type { Annotation, Book, Note, OutlineItem } from '../../types';
 import { OutlinePanel } from './OutlinePanel';
 import { HighlightsPanel } from './HighlightsPanel';
 import { NotesPanel } from './NotesPanel';
-import { AIPanel } from '../AI/AIPanel';
+import { AIPanel, type ExternalReference } from '../AI/AIPanel';
 
 export type ReaderTab = 'toc' | 'highlights' | 'notes' | 'ai';
 
@@ -21,7 +21,7 @@ type Props = {
   pageCount: number;
   percent: number;
   focusNote: number;
-  aiSelection?: string;
+  aiExternal?: ExternalReference | null;
   onJump: (page: number, annotationId?: string) => void;
   onFavorite: (annotation: Annotation, value: boolean) => void;
   onRemoveAnnotation: (annotation: Annotation) => void;
@@ -29,7 +29,9 @@ type Props = {
   onUpdateNote: (note: Note, text: string) => Promise<void>;
   onRemoveNote: (note: Note) => void;
   onOpenSettings: () => void;
-  onClearAiSelection: () => void;
+  onConsumeAiExternal: () => void;
+  onAskHighlight: (annotation: Annotation) => void;
+  onAskNote: (note: Note) => void;
 };
 
 export function ReaderSidebar(props: Props) {
@@ -74,6 +76,7 @@ export function ReaderSidebar(props: Props) {
             onJump={props.onJump}
             onFavorite={props.onFavorite}
             onRemove={props.onRemoveAnnotation}
+            onAsk={props.onAskHighlight}
           />
         )}
         {tab === 'notes' && (
@@ -85,6 +88,7 @@ export function ReaderSidebar(props: Props) {
             onAdd={props.onAddNote}
             onUpdate={props.onUpdateNote}
             onRemove={props.onRemoveNote}
+            onAsk={props.onAskNote}
           />
         )}
         {tab === 'ai' && (
@@ -96,8 +100,8 @@ export function ReaderSidebar(props: Props) {
             annotations={props.annotations}
             notes={props.notes}
             toc={props.toc}
-            selection={props.aiSelection}
-            onClearSelection={props.onClearAiSelection}
+            externalReference={props.aiExternal}
+            onConsumeExternal={props.onConsumeAiExternal}
             onJump={props.onJump}
             onOpenSettings={props.onOpenSettings}
           />

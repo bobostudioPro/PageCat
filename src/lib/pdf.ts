@@ -136,7 +136,7 @@ export async function getOutline(doc: PDFDocumentProxy): Promise<OutlineItem[]> 
 }
 
 
-function cleanPageFurniture(text: string) {
+export function cleanPageFurniture(text: string) {
   let t = normalizeText(text);
   t = t.replace(/^.*?\bChapter\s+[A-Za-z0-9]+\b[.:]?\s*/i, '');
   t = t.replace(/^.*?\bThe\s+(First|Second|Third|Fourth|Fifth|Sixth|Seventh|Eighth|Ninth|Tenth)\s+Book\b\s*/i, '');
@@ -144,6 +144,76 @@ function cleanPageFurniture(text: string) {
   t = t.replace(/\s*(?:[A-Z]\s*){2,}·\s*P\s*A\s*G\s*E\s*C\s*A\s*T\s*$/i, '');
   t = t.replace(/\s*P\s*A\s*G\s*E\s*C\s*A\s*T\s*$/i, '');
   return t.trim();
+}
+
+
+export type PageParagraph = { index: number; text: string };
+
+export async function getPageParagraphs(doc: PDFDocumentProxy, pageNumber: number): Promise<PageParagraph[]> {
+  const page = await doc.getPage(pageNumber);
+  try {
+    const viewport = page.getViewport({ scale: 1 });
+    const content = await page.getTextContent();
+    type Line = { y: number; height: number; items: { x: number; str: string }[] };
+    const lines: Line[] = [];
+    for (const item of content.items) {
+      if (!('str' in item) || !item.str.trim()) continue;
+      const tx = item.transform;
+      const y = tx[5];
+      if (y > viewport.height * 0.965 || y < viewport.height * 0.025) continue;
+      const height = Math.abs(tx[3]) || item.height || 10;
+      const line = lines.find((l) => Math.abs(l.y - y) < Math.max(2, height * 0.35));
+      if (line) line.items.push({ x: tx[4], str: item.str });
+      else lines.push({ y, height, items: [{ x: tx[4], str: item.str }] });
+    }
+    lines.sort((a, b) => b.y - a.y);
+    const visible = lines
+      .map((line) => {
+        const text = normalizeText(
+          line.items
+            .sort((a, b) => a.x - b.x)
+            .map((i) => i.str)
+            .join(' '),
+        );
+        return { ...line, text };
+      })
+      .filter((line) => {
+        if (line.text.length < 2) return false;
+        if (/^(?:[A-Z]\s+){2,}[A-Z]/.test(line.text)) return false;
+        if (/P\s*A\s*G\s*E\s*C\s*A\s*T/i.test(line.text)) return false;
+        return true;
+      });
+
+    const gaps: number[] = [];
+    for (let i = 1; i < visible.length; i++) {
+      const gap = Math.abs(visible[i - 1].y - visible[i].y);
+      if (gap > 1 && gap < 60) gaps.push(gap);
+    }
+    gaps.sort((a, b) => a - b);
+    const median = gaps[Math.floor(gaps.length / 2)] ?? 14;
+    const paragraphs: string[][] = [];
+    let current: string[] = [];
+    for (let i = 0; i < visible.length; i++) {
+      const line = visible[i];
+      if (i > 0) {
+        const gap = Math.abs(visible[i - 1].y - line.y);
+        if (gap > median * 1.16) {
+          if (current.length) paragraphs.push(current);
+          current = [];
+        }
+      }
+      current.push(line.text);
+    }
+    if (current.length) paragraphs.push(current);
+
+    return paragraphs
+      .map((parts) => cleanPageFurniture(parts.join(' ')))
+      .filter((text) => text.length >= 60)
+      .slice(0, 12)
+      .map((text, index) => ({ index, text }));
+  } finally {
+    page.cleanup();
+  }
 }
 
 export const textCache = new Map<string, string[]>();

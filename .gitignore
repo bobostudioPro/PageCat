@@ -5,3 +5,4 @@ dist
 scripts/.cache
 /screenshots
 /dev-server.log
+tmp/

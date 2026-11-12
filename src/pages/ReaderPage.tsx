@@ -25,6 +25,7 @@ import type { Annotation, AnnotationColor, OutlineItem } from '../types';
 import { clamp, isEditableTarget } from '../lib/utils';
 import { selectionFromWindow, hitTest, type TextSelection } from '../lib/selection';
 import { PageView } from '../components/Reader/PageView';
+import type { ExternalReference } from '../components/AI/AIPanel';
 import { SelectionToolbar } from '../components/Reader/SelectionToolbar';
 import { AnnotationPopover } from '../components/Reader/AnnotationPopover';
 import { ReaderSidebar, type ReaderTab } from '../components/Reader/ReaderSidebar';
@@ -60,7 +61,8 @@ export function ReaderPage() {
   const [selection, setSelection] = useState<TextSelection | null>(null);
   const [activeAnnotationId, setActiveAnnotationId] = useState<string | null>(null);
   const [popoverAnchor, setPopoverAnchor] = useState<PopoverAnchor | null>(null);
-  const [aiSelection, setAiSelection] = useState<string>();
+  const [aiExternal, setAiExternal] = useState<ExternalReference | null>(null);
+  const aiNonce = useRef(0);
   const [flashId, setFlashId] = useState<string>();
   const [focusNote, setFocusNote] = useState(0);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -376,9 +378,16 @@ export function ReaderPage() {
     }
   };
 
-  const askAboutSelection = (text: string) => {
+  const askAboutSelection = (
+    text: string,
+    kind: ExternalReference['kind'] = 'selection',
+    page = currentPage,
+    refId?: string,
+    quote?: string,
+  ) => {
     if (!text.trim()) return;
-    setAiSelection(text.trim());
+    aiNonce.current += 1;
+    setAiExternal({ kind, page, text: text.trim(), refId, quote, nonce: aiNonce.current });
     setSelection(null);
     setActiveAnnotationId(null);
     setPopoverAnchor(null);
@@ -603,7 +612,10 @@ export function ReaderPage() {
             pageCount={totalPages}
             percent={percent}
             focusNote={focusNote}
-            aiSelection={aiSelection}
+            aiExternal={aiExternal}
+            onConsumeAiExternal={() => setAiExternal(null)}
+            onAskHighlight={(annotation) => askAboutSelection(annotation.quote, 'highlight', annotation.page, annotation.id)}
+            onAskNote={(note) => askAboutSelection(note.text, 'note', note.page, note.id, note.quote)}
             onJump={jumpTo}
             onFavorite={(annotation: Annotation, value: boolean) => void annStore.update(annotation.id, { favorite: value })}
             onRemoveAnnotation={(annotation) => void annStore.remove(annotation.id)}
@@ -617,7 +629,6 @@ export function ReaderPage() {
             }}
             onRemoveNote={(note) => void annStore.removeNote(note.id)}
             onOpenSettings={() => setSettingsOpen(true)}
-            onClearAiSelection={() => setAiSelection(undefined)}
           />
         )}
         {sidebar.open && <button className="sidebar-backdrop" aria-label="收起侧栏" onClick={() => setSidebar((s) => ({ ...s, open: false }))} />}
@@ -630,7 +641,7 @@ export function ReaderPage() {
           onUnderline={() => void createAnnotation('sky', 'underline')}
           onFavorite={() => void createAnnotation('amber', 'highlight', true)}
           onNote={() => void createAnnotation('amber', 'highlight', false, true)}
-          onAsk={() => askAboutSelection(selection.text)}
+          onAsk={() => askAboutSelection(selection.text, 'selection', selection.page)}
           onCopy={() => {
             void navigator.clipboard.writeText(selection.text);
             push('已复制原文', 'success');
@@ -666,7 +677,7 @@ export function ReaderPage() {
             setPopoverAnchor(null);
             push('划线已删除');
           }}
-          onAsk={() => askAboutSelection(activeAnnotation.quote)}
+          onAsk={() => askAboutSelection(activeAnnotation.quote, 'highlight', activeAnnotation.page, activeAnnotation.id)}
           onJump={() => {
             jumpTo(activeAnnotation.page, activeAnnotation.id);
             setActiveAnnotationId(null);

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Highlighter, NotebookPen, Star, Trash2 } from 'lucide-react';
+import { Highlighter, NotebookPen, Sparkles, Star, Trash2 } from 'lucide-react';
 import type { Annotation, Note } from '../../types';
 import { annotationStyle } from '../../lib/selection';
 
@@ -10,9 +10,10 @@ type Props = {
   onJump: (page: number, id?: string) => void;
   onFavorite: (annotation: Annotation, value: boolean) => void;
   onRemove: (annotation: Annotation) => void;
+  onAsk: (annotation: Annotation) => void;
 };
 
-export function HighlightsPanel({ annotations, notes, currentPage, onJump, onFavorite, onRemove }: Props) {
+export function HighlightsPanel({ annotations, notes, currentPage, onJump, onFavorite, onRemove, onAsk }: Props) {
   const [filter, setFilter] = useState<'all' | 'favorites'>('all');
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const filtered = filter === 'favorites' ? annotations.filter((a) => a.favorite) : annotations;
@@ -58,6 +59,17 @@ export function HighlightsPanel({ annotations, notes, currentPage, onJump, onFav
                   <span className="hc-page">第 {annotation.page} 页</span>
                   <span className="hc-style">{annotation.style === 'underline' ? '下划线' : '高亮'}</span>
                   <span className="hc-spacer" />
+                  <button
+                    className="hc-icon ask"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onAsk(annotation);
+                    }}
+                    title="问 AI"
+                    aria-label="将这条划线引入 AI"
+                  >
+                    <Sparkles size={12} />
+                  </button>
                   <button
                     className={`hc-icon ${annotation.favorite ? 'on' : ''}`}
                     onClick={(e) => {

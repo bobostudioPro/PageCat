@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Check, NotebookPen, Pencil, Trash2, X } from 'lucide-react';
+import { Check, NotebookPen, Pencil, Sparkles, Trash2, X } from 'lucide-react';
 import type { Note } from '../../types';
 import { formatDate } from '../../lib/utils';
 
@@ -11,9 +11,10 @@ type Props = {
   onAdd: (text: string) => Promise<void>;
   onUpdate: (note: Note, text: string) => Promise<void>;
   onRemove: (note: Note) => void;
+  onAsk: (note: Note) => void;
 };
 
-export function NotesPanel({ notes, currentPage, focusSignal, onJump, onAdd, onUpdate, onRemove }: Props) {
+export function NotesPanel({ notes, currentPage, focusSignal, onJump, onAdd, onUpdate, onRemove, onAsk }: Props) {
   const [draft, setDraft] = useState('');
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -88,6 +89,14 @@ export function NotesPanel({ notes, currentPage, focusSignal, onJump, onAdd, onU
                 </button>
                 <span className="nc-date">{formatDate(note.updatedAt)}</span>
                 <span className="nc-spacer" />
+                <button
+                  className="hc-icon ask"
+                  onClick={() => onAsk(note)}
+                  title="问 AI"
+                  aria-label="将这条笔记引入 AI"
+                >
+                  <Sparkles size={12} />
+                </button>
                 <button
                   className="hc-icon"
                   onClick={() => {
