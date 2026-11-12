@@ -607,8 +607,8 @@ export function AIPanel({
                 <h3>和这本书聊一聊</h3>
                 <p>
                   {online
-                    ? '我会读当前页、相邻页、目录，以及你的划线和笔记。你还可以引用某一页、整本书、划线或笔记，让我围绕它们回答。'
-                    : '现在用的是本地速读：抽取摘要、找关键词、搜索原文、生成思考题；知识型问题会尝试查询维基百科。填入 API Key 后可以进行真正的 AI 对话。'}
+                    ? '我会结合当前页、引用、划线和笔记回答。'
+                    : '本地速读：摘要、找原文、思考题；接入 API Key 后可对话。'}
                 </p>
                 <div className="ai-suggestions">
                   {suggestions.map((item) => (
@@ -879,11 +879,7 @@ export function AIPanel({
                 <span>
                   回答由 <button onClick={onOpenSettings}>{modeLabel}</button> 生成，可能有误，请回原文核对。
                 </span>
-              ) : (
-                <span>
-                  本地速读 · 知识卡查询维基百科 · <button onClick={onOpenSettings}>接入 AI</button>
-                </span>
-              )}
+              ) : null}
               <span className="ai-keys">Enter 发送 · Shift + Enter 换行</span>
             </div>
           </div>

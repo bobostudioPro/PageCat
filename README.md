@@ -1,6 +1,6 @@
 # PageCat · 一间安静的数字书房
 
-![PageCat 书架](docs/screenshots/after-v6-nine.jpg)
+![PageCat 书架](docs/screenshots/after-v9-clean.jpg)
 
 ![书脊标题与书签细节](docs/screenshots/after-v3-spines.jpg)
 

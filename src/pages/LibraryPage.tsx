@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, BookOpen, CloudUpload, Search, Settings2, Sparkles, X } from 'lucide-react';
+import { ArrowRight, BookOpen, CloudUpload, Search, Settings2, X } from 'lucide-react';
 import { useLibrary } from '../state/library';
 import { Logo } from '../components/ui/Logo';
 import { Shelf } from '../components/Shelf/Shelf';
@@ -174,10 +174,6 @@ export function LibraryPage() {
       <div className="library-shell">
         <header className="site-header">
           <Logo light />
-          <div className="header-local">
-            <span className="local-dot" />
-            LOCAL LIBRARY
-          </div>
           <div className="header-spacer" />
           <label className={`search-box ${searchOpen ? 'open' : ''}`}>
             <Search size={15} />
@@ -214,18 +210,11 @@ export function LibraryPage() {
 
         <section className="hero">
           <div className="hero-copy">
-            <p className="hero-kicker">
-              <span>{today()}</span>
-              <span className="kicker-line" />
-              <span>A QUIET ROOM FOR YOUR PDFS</span>
-            </p>
+            <p className="hero-kicker">{today()}</p>
             <h1>
               {greeting()}，<em>读书人</em>。
             </h1>
-            <p className="hero-lede">
-              把一本 PDF 放上书架，划线、收藏、记笔记，再和 AI 助手聊一聊。
-              这里没有信息流，只有你挑中的书。
-            </p>
+            <p className="hero-lede">把 PDF 放上书架，划线、记笔记，和 AI 一起读。</p>
             <p className="hero-quote">“{quote}”</p>
             <div className="hero-stats">
               <div>
@@ -283,9 +272,6 @@ export function LibraryPage() {
           <h2>
             我的书架 <span>{books.length}</span>
           </h2>
-          <p>
-            <Sparkles size={13} /> 拖动书脊或猫/盆栽整理书架，也可以拖入 PDF
-          </p>
         </div>
 
         <Shelf
@@ -301,11 +287,7 @@ export function LibraryPage() {
         />
 
         <footer className="site-footer">
-          <span>PageCat · 把 PDF 读成一本书</span>
-          <span className="footer-sep" />
           <span>PDF 与批注只保存在本机</span>
-          <span className="footer-sep" />
-          <span>右键或长按书本，可以整理书架</span>
           <span className="footer-spacer" />
           <span className="footer-mark">PAGECAT</span>
         </footer>

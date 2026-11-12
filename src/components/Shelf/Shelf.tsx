@@ -71,12 +71,6 @@ function saveDecor(decor: DecorStore) {
 
 const rowCapacity = 12;
 
-const shelfLabels = [
-  { kicker: 'RECENTLY READ', zh: '常读常新' },
-  { kicker: 'STILL READING', zh: '继续翻阅' },
-  { kicker: 'TO BE READ', zh: '未完待续' },
-];
-
 function useShelfLayout() {
   const read = () => {
     const width = typeof window === 'undefined' ? 1440 : window.innerWidth;
@@ -420,12 +414,7 @@ export function Shelf({
         />
       )}
       <div className="bookcase-crown">
-        <span className="crown-plate">
-          <span className="crown-cat">⌂</span>
-          <span>PAGECAT · 私人书房</span>
-        </span>
         <span className="crown-line" />
-        <span className="crown-year">EST. 2026</span>
       </div>
 
       <div
@@ -438,7 +427,6 @@ export function Shelf({
         {rows.map((rowBooks, rowIndex) => {
           const isFirst = rowIndex === 0;
           const isLast = rowIndex === rows.length - 1;
-          const label = isFirst ? shelfLabels[0] : isLast ? shelfLabels[2] : shelfLabels[1];
           return (
             <Fragment key={rowIndex}>
               <div className={cn('shelf-row', rowIndex > 0 && 'lower')}>
@@ -475,7 +463,7 @@ export function Shelf({
                 )}
                 {isFirst && filtered.length === 0 && (
                   <div className="shelf-empty">
-                    <p>{query ? `没有找到「${query}」` : '书架还空着，像一间刚打扫好的房间。'}</p>
+                    <p>{query ? `没有找到「${query}」` : '书架还是空的。'}</p>
                     {query ? (
                       <button className="shelf-empty-link" onClick={onClearSearch}>
                         清除搜索
@@ -497,17 +485,7 @@ export function Shelf({
                     onMoveEnd={finishDecorDrag}
                   />
                 )}
-                {isLast && filtered.length > 0 && rowBooks.length === 0 && (
-                  <div className="shelf-quiet">
-                    <span>再放一本书，这里会更热闹。</span>
-                    <button onClick={onUpload}>放入新书</button>
-                  </div>
-                )}
                 <div className="shelf-flex-spacer" />
-                <span className={cn('shelf-plaque', rowIndex > 0 && 'lower')}>
-                  <em>{label.kicker}</em>
-                  <i>{label.zh}</i>
-                </span>
               </div>
               <div className="shelf-board" aria-hidden="true">
                 <span className="board-light" />
