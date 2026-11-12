@@ -67,7 +67,7 @@ export function ReaderPage() {
   const [base, setBase] = useState({ w: 612, h: 792 });
   const [baseReady, setBaseReady] = useState(false);
   const [scale, setScale] = useState(1);
-  const [zoom, setZoom] = useState(1);
+  const [zoom, setZoom] = useState(() => (typeof window !== 'undefined' && window.innerWidth >= 1200 ? 1.2 : 1));
   const [viewportWidth, setViewportWidth] = useState(0);
   const [viewportHeight, setViewportHeight] = useState(0);
   const [currentPage, setCurrentPage] = useState(book?.lastPage ?? 1);
