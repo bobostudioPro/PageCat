@@ -296,6 +296,7 @@ export function LibraryPage() {
           onContext={(book, x, y) => setMenu({ book, x, y })}
           onUpload={() => setUploadOpen(true)}
           onClearSearch={() => setQuery('')}
+          dragActive={dragActive}
         />
 
         <footer className="site-footer">

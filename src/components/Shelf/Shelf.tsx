@@ -13,6 +13,7 @@ type Props = {
   onContext: (book: Book, x: number, y: number) => void;
   onUpload: () => void;
   onClearSearch: () => void;
+  dragActive?: boolean;
 };
 
 const shelfLabels = [
@@ -20,7 +21,7 @@ const shelfLabels = [
   { kicker: 'TO BE READ', zh: '未完待续' },
 ];
 
-export function Shelf({ books, query, pullingId, onOpen, onContext, onUpload, onClearSearch }: Props) {
+export function Shelf({ books, query, pullingId, onOpen, onContext, onUpload, onClearSearch, dragActive }: Props) {
   const filtered = query.trim()
     ? books.filter((b) => {
         const q = query.trim().toLowerCase();
@@ -60,7 +61,7 @@ export function Shelf({ books, query, pullingId, onOpen, onContext, onUpload, on
               onContext={onContext}
             />
           ))}
-          {!query && <ShelfCat />}
+          {!query && <ShelfCat dragActive={dragActive} />}
           {filtered.length === 0 && (
             <div className="shelf-empty">
               <p>{query ? `没有找到「${query}」` : '书架还空着，像一间刚打扫好的房间。'}</p>
