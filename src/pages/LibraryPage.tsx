@@ -13,15 +13,6 @@ import { Modal } from '../components/ui/Modal';
 import type { Book } from '../types';
 import { rerange } from '../lib/utils';
 
-function greeting() {
-  const h = new Date().getHours();
-  if (h < 5) return '夜深了';
-  if (h < 11) return '早上好';
-  if (h < 14) return '午安';
-  if (h < 18) return '下午好';
-  return '晚上好';
-}
-
 function today() {
   return new Intl.DateTimeFormat('zh-CN', { month: 'long', day: 'numeric', weekday: 'long' }).format(new Date());
 }
@@ -192,7 +183,7 @@ export function LibraryPage() {
           </button>
           <button className="btn btn-brass header-add" onClick={() => setUploadOpen(true)}>
             <CloudUpload size={15} />
-            放入新书
+            上架书籍
           </button>
           <button className="icon-btn on-dark header-settings" onClick={() => setSettingsOpen(true)} aria-label="书房设置">
             <Settings2 size={18} />
@@ -202,9 +193,6 @@ export function LibraryPage() {
         <section className="hero">
           <div className="hero-copy">
             <p className="hero-kicker">{today()}</p>
-            <h1>
-              {greeting()}，<em>读书人</em>。
-            </h1>
             <div className="hero-stats">
               <div>
                 <strong>{books.length}</strong>
@@ -257,12 +245,6 @@ export function LibraryPage() {
           )}
         </section>
 
-        <div className="shelf-heading">
-          <h2>
-            我的书架 <span>{books.length}</span>
-          </h2>
-        </div>
-
         <Shelf
           books={books}
           query={query}
@@ -276,9 +258,7 @@ export function LibraryPage() {
         />
 
         <footer className="site-footer">
-          <span>PDF 与批注只保存在本机</span>
-          <span className="footer-spacer" />
-          <span className="footer-mark">PAGECAT</span>
+          <span>© @bobostudio 2026</span>
         </footer>
       </div>
 

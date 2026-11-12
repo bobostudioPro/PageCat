@@ -34,6 +34,7 @@ import { AnnotationPopover } from '../components/Reader/AnnotationPopover';
 import { ReaderSidebar, type ReaderTab } from '../components/Reader/ReaderSidebar';
 import { SelectionTranslationCard } from '../components/Reader/SelectionTranslationCard';
 import { TtsPlayer } from '../components/Reader/TtsPlayer';
+import { PageTurnEffect, type PageTurnState } from '../components/Reader/PageTurnEffect';
 import { SettingsDialog } from '../components/ui/SettingsDialog';
 import { useTts } from '../state/tts';
 import { Logo } from '../components/ui/Logo';
@@ -83,6 +84,7 @@ export function ReaderPage() {
   const [focusNote, setFocusNote] = useState(0);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [selectionTranslation, setSelectionTranslation] = useState<SelectionTranslation | null>(null);
+  const [pageTurn, setPageTurn] = useState<PageTurnState | null>(null);
   const speaking = useTts((s) => s.speaking);
 
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -92,6 +94,7 @@ export function ReaderPage() {
   const tabInitialized = useRef(false);
   const lastScale = useRef(1);
   const flashTimer = useRef<number | undefined>(undefined);
+  const pageTurnTimer = useRef<number | undefined>(undefined);
 
   const theme = settings.readerTheme;
   const activeAnnotation = activeAnnotationId ? annotations.find((a) => a.id === activeAnnotationId) ?? null : null;
@@ -226,6 +229,22 @@ export function ReaderPage() {
     setCurrentPage(page);
     setPageDraft(String(page));
   }, []);
+
+  const showPageTurn = (direction: 'next' | 'prev') => {
+    const pageEl = scrollRef.current?.querySelector<HTMLElement>(`.page-block[data-page="${currentPage}"] .pdf-page`);
+    if (!pageEl) return;
+    const rect = pageEl.getBoundingClientRect();
+    const top = Math.max(62, rect.top);
+    const height = Math.min(rect.height, window.innerHeight - top - 8);
+    if (height < 120 || rect.width < 80) return;
+    if (pageTurnTimer.current) window.clearTimeout(pageTurnTimer.current);
+    setPageTurn({
+      id: Date.now(),
+      direction,
+      rect: { left: rect.left, top, width: rect.width, height },
+    });
+    pageTurnTimer.current = window.setTimeout(() => setPageTurn(null), 700);
+  };
 
   // Restore last position once the first page's dimensions are known.
   useEffect(() => {
@@ -418,16 +437,19 @@ export function ReaderPage() {
   };
 
   const jumpTo = (page: number, annotationId?: string) => {
+    if (page !== currentPage) showPageTurn(page > currentPage ? 'next' : 'prev');
     scrollToPage(page);
     if (annotationId) {
       setFlashId(annotationId);
       if (flashTimer.current) window.clearTimeout(flashTimer.current);
+      if (pageTurnTimer.current) window.clearTimeout(pageTurnTimer.current);
       flashTimer.current = window.setTimeout(() => setFlashId(undefined), 1800);
     }
     if (window.innerWidth <= 1024) setSidebar((s) => ({ ...s, open: false }));
   };
 
   const jumpToPanel = (page: number) => {
+    if (page !== currentPage) showPageTurn(page > currentPage ? 'next' : 'prev');
     scrollToPage(page);
   };
 
@@ -446,14 +468,20 @@ export function ReaderPage() {
   const goPage = (delta: number) => {
     if (!book) return;
     const next = clamp(currentPage + delta, 1, book.pageCount);
+    if (next !== currentPage) showPageTurn(delta > 0 ? 'next' : 'prev');
     scrollToPage(next);
   };
 
   const commitPageDraft = () => {
     if (!book) return;
     const value = Number(pageDraft);
-    if (Number.isFinite(value) && value >= 1) scrollToPage(clamp(Math.round(value), 1, book.pageCount));
-    else setPageDraft(String(currentPage));
+    if (Number.isFinite(value) && value >= 1) {
+      const target = clamp(Math.round(value), 1, book.pageCount);
+      if (target !== currentPage) showPageTurn(target > currentPage ? 'next' : 'prev');
+      scrollToPage(target);
+    } else {
+      setPageDraft(String(currentPage));
+    }
   };
 
   useEffect(() => {
@@ -801,6 +829,7 @@ export function ReaderPage() {
         <i><span style={{ width: `${percent * 100}%` }} /></i>
       </div>
 
+      <PageTurnEffect turn={pageTurn} theme={theme} />
       <TtsPlayer />
       <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </div>

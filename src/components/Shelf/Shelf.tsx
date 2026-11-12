@@ -36,7 +36,7 @@ const defaultDecor: DecorStore = {
 };
 
 function clampDecorX(x: number) {
-  return Math.max(10, Math.min(86, x));
+  return Math.max(0, Math.min(100, x));
 }
 
 function loadDecor(): DecorStore {
@@ -470,7 +470,7 @@ export function Shelf({
                       </button>
                     ) : (
                       <button className="shelf-empty-link" onClick={onUpload}>
-                        放入第一本书
+                        上架第一本书
                       </button>
                     )}
                   </div>

@@ -51,7 +51,7 @@ export function UploadDialog({ open, onClose, initialFiles, onConsumed }: Props)
       onClose={() => {
         if (!adding) onClose();
       }}
-      title="把一本书放上书架"
+      title="上架书籍"
       subtitle="PDF 只在你的浏览器里处理与保存，不会上传到任何服务器。"
     >
       <div

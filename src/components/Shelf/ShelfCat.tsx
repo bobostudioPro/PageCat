@@ -183,7 +183,7 @@ export function ShelfCat({ dragActive = false, x = 82, dragging = false, movable
   return (
     <div
       className={cn('shelf-cat', mood, blinking && 'blinking', dragActive && 'drag-alert', dragging && 'decor-dragging')}
-      style={{ left: `clamp(112px, ${x}%, calc(100% - 112px))`, right: 'auto', '--look-x': `${look.x}px`, '--look-y': `${look.y}px` } as React.CSSProperties}
+      style={{ left: `clamp(8px, ${x}%, calc(100% - 232px))`, right: 'auto', '--look-x': `${look.x}px`, '--look-y': `${look.y}px` } as React.CSSProperties}
     >
       {bubble && (
         <div className="cat-bubble" role="status">

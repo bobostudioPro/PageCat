@@ -31,7 +31,6 @@ export function Logo({ className, light = false }: { className?: string; light?:
       </span>
       <span className="brand-word">
         <span className="brand-name">PageCat</span>
-        <span className="brand-sub">数字书房</span>
       </span>
     </span>
   );

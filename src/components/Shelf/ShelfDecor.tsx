@@ -12,7 +12,7 @@ export function ShelfDecor({ x = 80, dragging = false, movable = true, onMoveSta
   return (
     <div
       className={cn('shelf-decor', dragging && 'decor-dragging')}
-      style={{ left: `clamp(63px, ${x}%, calc(100% - 63px))`, right: 'auto' } as React.CSSProperties}
+      style={{ left: `clamp(8px, ${x}%, calc(100% - 134px))`, right: 'auto' } as React.CSSProperties}
     >
       <div className="deco-stack" aria-hidden="true">
         <span className="deco-book b1" />

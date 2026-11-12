@@ -72,7 +72,7 @@ export function BookSpine({ book, shelfIndex, pulling, draggable, dragging, reor
   const showTip = (el: HTMLElement) => {
     if (!window.matchMedia('(hover: hover)').matches) return;
     const rect = el.getBoundingClientRect();
-    const tipWidth = 218;
+    const tipWidth = 284;
     const left = Math.min(
       window.innerWidth - tipWidth / 2 - 12,
       Math.max(tipWidth / 2 + 12, rect.left + rect.width / 2),
