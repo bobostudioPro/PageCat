@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { Book, SeedManifest } from '../types';
-import { putBook, getBook, listBooks, removeAnnotation, listAnnotations } from '../lib/db';
+import { putBook, putBooks, getBook, listBooks, removeAnnotation, listAnnotations } from '../lib/db';
 import { accentForTitle } from '../lib/utils';
 import { readPdfMeta, closeBookPdf } from '../lib/pdf';
 import { seedLibrary } from '../lib/seed';
@@ -15,6 +15,7 @@ type LibraryState = {
   addBook: (file: File) => Promise<Book | null>;
   updateBook: (id: string, patch: Partial<Book>) => Promise<Book | undefined>;
   removeBook: (id: string) => Promise<void>;
+  reorderBooks: (orderedIds: string[]) => Promise<void>;
 };
 
 export const useLibrary = create<LibraryState>((set, get) => ({
@@ -45,8 +46,10 @@ export const useLibrary = create<LibraryState>((set, get) => ({
       const meta = await readPdfMeta(file);
       const id = `book_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
       const title = meta.title || file.name.replace(/\.pdf$/i, '');
+      const minOrder = get().books.reduce((min, b) => Math.min(min, b.order ?? 0), 0);
       const book: Book = {
         id,
+        order: minOrder - 1,
         title,
         author: meta.author || '未署名',
         fileName: file.name,
@@ -91,6 +94,28 @@ export const useLibrary = create<LibraryState>((set, get) => ({
     await closeBookPdf(id);
     set({ books: get().books.filter((b) => b.id !== id) });
     useToast.getState().push(`《${book.title}》已从书架取下`);
+  },
+  reorderBooks: async (orderedIds) => {
+    const current = get().books;
+    const byId = new Map(current.map((book) => [book.id, book]));
+    const seen = new Set<string>();
+    const ordered: Book[] = [];
+    for (const id of orderedIds) {
+      const book = byId.get(id);
+      if (!book || seen.has(id)) continue;
+      seen.add(id);
+      ordered.push(book);
+    }
+    for (const book of current) {
+      if (!seen.has(book.id)) ordered.push(book);
+    }
+    const next = ordered.map((book, index) => ({ ...book, order: index }));
+    try {
+      await putBooks(next);
+      set({ books: next });
+    } catch (err) {
+      useToast.getState().push(`整理书架失败：${(err as Error).message}`, 'error');
+    }
   },
 }));
 

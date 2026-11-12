@@ -76,19 +76,42 @@ export function db() {
 export async function listBooks() {
   const database = await db();
   const books = await database.getAllFromIndex('books', 'by-created');
+  if (!books.length) return books;
   const isReading = (book: Book) => Boolean(book.lastOpenedAt || book.percent || book.lastPage);
-  return books.sort((a, b) => {
+  const legacySort = (a: Book, b: Book) => {
     const aReading = isReading(a);
     const bReading = isReading(b);
     if (aReading !== bReading) return aReading ? -1 : 1;
     if (aReading) return (b.lastOpenedAt ?? 0) - (a.lastOpenedAt ?? 0);
     return b.createdAt - a.createdAt;
-  });
+  };
+  const ordered = books.filter((b) => Number.isFinite(b.order));
+  if (ordered.length === books.length) {
+    return [...books].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  }
+  const missing = books.filter((b) => !Number.isFinite(b.order)).sort(legacySort);
+  const normalized =
+    ordered.length === 0
+      ? missing.map((book, index) => ({ ...book, order: index }))
+      : [
+          ...ordered.sort((a, b) => (a.order ?? 0) - (b.order ?? 0)),
+          ...missing,
+        ].map((book, index) => ({ ...book, order: index }));
+  await putBooks(normalized);
+  return normalized;
 }
 
 export async function putBook(book: Book) {
   const database = await db();
   await database.put('books', book);
+}
+
+export async function putBooks(books: Book[]) {
+  if (!books.length) return;
+  const database = await db();
+  const tx = database.transaction('books', 'readwrite');
+  for (const book of books) tx.objectStore('books').put(book);
+  await tx.done;
 }
 
 export async function getBook(id: string) {

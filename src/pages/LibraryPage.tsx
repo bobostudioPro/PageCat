@@ -36,7 +36,7 @@ function today() {
 
 export function LibraryPage() {
   const navigate = useNavigate();
-  const { books, status, error, initialize, removeBook } = useLibrary();
+  const { books, status, error, initialize, removeBook, reorderBooks } = useLibrary();
   const [query, setQuery] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -284,7 +284,7 @@ export function LibraryPage() {
             我的书架 <span>{books.length}</span>
           </h2>
           <p>
-            <Sparkles size={13} /> 从书架上取下一本，或者拖一个 PDF 进来
+            <Sparkles size={13} /> 拖动书脊换位置，或者拖一个 PDF 进来
           </p>
         </div>
 
@@ -296,6 +296,7 @@ export function LibraryPage() {
           onContext={(book, x, y) => setMenu({ book, x, y })}
           onUpload={() => setUploadOpen(true)}
           onClearSearch={() => setQuery('')}
+          onReorder={(ids) => void reorderBooks(ids)}
           dragActive={dragActive}
         />
 

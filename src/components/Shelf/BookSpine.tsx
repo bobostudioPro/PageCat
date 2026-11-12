@@ -5,10 +5,15 @@ import { cn, rerange } from '../../lib/utils';
 
 type Props = {
   book: Book;
-  index: number;
+  shelfIndex: number;
   pulling?: boolean;
+  draggable?: boolean;
+  dragging?: boolean;
+  reordering?: boolean;
   onOpen: (book: Book) => void;
   onContext: (book: Book, x: number, y: number) => void;
+  onDragStart?: (book: Book, event: React.DragEvent<HTMLDivElement>) => void;
+  onDragEnd?: () => void;
   searchMatch?: boolean;
 };
 
@@ -42,12 +47,13 @@ function shortenSpineTitle(raw: string) {
   return cleaned;
 }
 
-export function BookSpine({ book, index, pulling, onOpen, onContext }: Props) {
+export function BookSpine({ book, shelfIndex, pulling, draggable, dragging, reordering, onOpen, onContext, onDragStart, onDragEnd }: Props) {
   const timer = useRef<number | null>(null);
   const longPressed = useRef(false);
   const [tip, setTip] = useState<Tip | null>(null);
-  const height = 218 + ((index * 17 + book.pageCount) % 4) * 14;
-  const width = 46 + ((book.title.length + index) % 4) * 5;
+  const sizeSeed = [...book.id].reduce((n, ch) => n + ch.charCodeAt(0), 0);
+  const height = 218 + ((sizeSeed + book.pageCount) % 4) * 14;
+  const width = 46 + ((sizeSeed + book.title.length) % 4) * 5;
   const accent = book.spineColor || book.accent || '#7b3f52';
   const title = book.titleZh || book.title;
   const author = book.authorZh || book.author;
@@ -76,6 +82,10 @@ export function BookSpine({ book, index, pulling, onOpen, onContext }: Props) {
   };
 
   useEffect(() => {
+    if (reordering) setTip(null);
+  }, [reordering]);
+
+  useEffect(() => {
     if (!tip) return;
     const hide = () => setTip(null);
     window.addEventListener('scroll', hide, true);
@@ -87,11 +97,21 @@ export function BookSpine({ book, index, pulling, onOpen, onContext }: Props) {
   }, [tip]);
 
   return (
-    <div className="spine-wrap" style={{ '--h': `${height}px`, '--w': `${width}px` } as React.CSSProperties}>
+    <div
+      className={cn('spine-wrap', dragging && 'dragging')}
+      style={{ '--h': `${height}px`, '--w': `${width}px` } as React.CSSProperties}
+      draggable={draggable}
+      data-shelf-index={shelfIndex}
+      onDragStart={(e) => {
+        setTip(null);
+        onDragStart?.(book, e);
+      }}
+      onDragEnd={() => onDragEnd?.()}
+    >
       <button
         className={cn('book-spine', pulling && 'pulling')}
         style={{ '--accent': accent } as React.CSSProperties}
-        aria-label={`打开《${title}》`}
+        aria-label={`打开《${title}》。拖动可以换位置。`}
         onClick={() => {
           setTip(null);
           if (longPressed.current) {
@@ -111,6 +131,7 @@ export function BookSpine({ book, index, pulling, onOpen, onContext }: Props) {
         }}
         onPointerDown={(e) => {
           if (e.button !== 0) return;
+          if (e.pointerType === 'mouse') return;
           longPressed.current = false;
           clearTimer();
           timer.current = window.setTimeout(() => {

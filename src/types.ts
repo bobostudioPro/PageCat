@@ -18,6 +18,7 @@ export type Book = {
   accent: string;
   spineColor?: string;
   createdAt: number;
+  order?: number;
   lastOpenedAt?: number;
   lastPage?: number;
   percent?: number;
