@@ -35,7 +35,6 @@ import { ReaderSidebar, type ReaderTab } from '../components/Reader/ReaderSideba
 import { SelectionTranslationCard } from '../components/Reader/SelectionTranslationCard';
 import { TtsPlayer } from '../components/Reader/TtsPlayer';
 import { PageTurnEffect, type PageTurnState } from '../components/Reader/PageTurnEffect';
-import { CornerPageTurn } from '../components/Reader/CornerPageTurn';
 import { SettingsDialog } from '../components/ui/SettingsDialog';
 import { useTts } from '../state/tts';
 import { Logo } from '../components/ui/Logo';
@@ -86,7 +85,6 @@ export function ReaderPage() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [selectionTranslation, setSelectionTranslation] = useState<SelectionTranslation | null>(null);
   const [pageTurn, setPageTurn] = useState<PageTurnState | null>(null);
-  const [cornerRect, setCornerRect] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
   const speaking = useTts((s) => s.speaking);
 
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -272,49 +270,6 @@ export function ReaderPage() {
     window.setTimeout(() => scrollToPage(currentPage, 'auto'), 60);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scale]);
-
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el || !doc || !baseReady) {
-      setCornerRect(null);
-      return;
-    }
-    let raf = 0;
-    const update = () => {
-      const pageEl = el.querySelector<HTMLElement>(`.page-block[data-page="${currentPage}"] .pdf-page`);
-      if (!pageEl) {
-        setCornerRect(null);
-        return;
-      }
-      const sr = el.getBoundingClientRect();
-      const pr = pageEl.getBoundingClientRect();
-      const left = Math.max(sr.left, pr.left);
-      const right = Math.min(sr.right, pr.right);
-      if (right - left < 100 || sr.height < 220) {
-        setCornerRect(null);
-        return;
-      }
-      setCornerRect({ left, top: sr.top, width: right - left, height: sr.height - 12 });
-    };
-    const onScroll = () => {
-      if (raf) return;
-      raf = requestAnimationFrame(() => {
-        raf = 0;
-        update();
-      });
-    };
-    update();
-    el.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', update);
-    const observer = new ResizeObserver(update);
-    observer.observe(el);
-    return () => {
-      el.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', update);
-      observer.disconnect();
-      if (raf) cancelAnimationFrame(raf);
-    };
-  }, [currentPage, scale, sidebar.open, doc, baseReady]);
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -883,12 +838,6 @@ export function ReaderPage() {
       </div>
 
       <PageTurnEffect turn={pageTurn} theme={theme} />
-      <CornerPageTurn
-        rect={pageTurn ? null : cornerRect}
-        theme={theme}
-        disabled={currentPage >= totalPages}
-        onTurn={() => goPage(1)}
-      />
       <TtsPlayer />
       <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </div>
