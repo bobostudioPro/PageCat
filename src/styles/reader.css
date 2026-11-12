@@ -2448,6 +2448,7 @@ body,
   position: fixed;
   z-index: 25;
   pointer-events: none;
+  overflow: hidden;
   perspective: 1800px;
   perspective-origin: 50% 48%;
 }

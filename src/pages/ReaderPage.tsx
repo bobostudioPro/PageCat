@@ -112,6 +112,8 @@ export function ReaderPage() {
   const lastScale = useRef(1);
   const flashTimer = useRef<number | undefined>(undefined);
   const pageTurnTimer = useRef<number | undefined>(undefined);
+  const renderedPages = useRef(new Set<number>());
+  const pageTurnTarget = useRef<number | undefined>(undefined);
 
   const theme = settings.readerTheme;
   const activeAnnotation = activeAnnotationId ? annotations.find((a) => a.id === activeAnnotationId) ?? null : null;
@@ -299,6 +301,8 @@ export function ReaderPage() {
     }
 
     if (pageTurnTimer.current) window.clearTimeout(pageTurnTimer.current);
+    pageTurnTarget.current = targetPage;
+    const started = performance.now();
     setPageTurn({
       id: Date.now(),
       direction,
@@ -306,7 +310,16 @@ export function ReaderPage() {
       nextImage,
       rect: { left: rect.left, top, width: rect.width, height },
     });
-    pageTurnTimer.current = window.setTimeout(() => setPageTurn(null), 1200);
+    const finish = () => {
+      const target = pageTurnTarget.current;
+      const ready = !target || renderedPages.current.has(target);
+      if (ready || performance.now() - started > 2600) {
+        setPageTurn(null);
+        return;
+      }
+      pageTurnTimer.current = window.setTimeout(finish, 70);
+    };
+    pageTurnTimer.current = window.setTimeout(finish, 1120);
   };
 
   const turnToPage = (direction: 'next' | 'prev', page: number) => {
@@ -751,6 +764,7 @@ export function ReaderPage() {
                   activeId={activeAnnotationId ?? undefined}
                   flashId={flashId}
                   scrollRoot={scrollRef}
+                  onRendered={(page) => renderedPages.current.add(page)}
                   onRectsResolved={(id, rects) => void annStore.setRects(id, rects)}
                 />
               ))}
