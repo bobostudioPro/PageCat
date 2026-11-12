@@ -69,6 +69,7 @@ export function ReaderPage() {
   const [scale, setScale] = useState(1);
   const [zoom, setZoom] = useState(1);
   const [viewportWidth, setViewportWidth] = useState(0);
+  const [viewportHeight, setViewportHeight] = useState(0);
   const [currentPage, setCurrentPage] = useState(book?.lastPage ?? 1);
   const [pageDraft, setPageDraft] = useState(String(book?.lastPage ?? 1));
   const [toc, setToc] = useState<OutlineItem[]>(book?.toc ?? []);
@@ -197,14 +198,18 @@ export function ReaderPage() {
     if (!el) return;
     const observer = new ResizeObserver(() => {
       setViewportWidth(el.clientWidth);
+      setViewportHeight(el.clientHeight);
     });
     observer.observe(el);
     setViewportWidth(el.clientWidth);
+    setViewportHeight(el.clientHeight);
     return () => observer.disconnect();
   }, [doc, sidebar.open]);
 
   const gutter = viewportWidth > 1000 ? 58 : viewportWidth > 640 ? 30 : 14;
-  const fitScale = viewportWidth ? Math.max(0.2, (viewportWidth - gutter * 2) / base.w) : 1;
+  const widthFit = viewportWidth ? Math.max(0.2, (viewportWidth - gutter * 2) / base.w) : 1;
+  const heightFit = viewportHeight ? Math.max(0.2, (viewportHeight - 118) / base.h) : widthFit;
+  const fitScale = Math.min(widthFit, heightFit);
   const effectiveScale = clamp(fitScale * zoom, 0.2, 3.2);
 
   useEffect(() => {
@@ -611,7 +616,7 @@ export function ReaderPage() {
         </div>
 
         <div className="rt-right">
-          <div className="zoom-control">
+          <div className="zoom-control" title="缩放仅影响 PDF；100% 为整页适应">
             <button onClick={() => setZoom((z) => clamp(Math.round((z - 0.1) * 10) / 10, 0.5, 2.2))} aria-label="缩小">
               <ZoomOut size={15} />
             </button>

@@ -16,62 +16,134 @@ type Props = {
 };
 
 type PageTranslation = {
+  page: number;
   paragraphs: PageParagraph[];
   translations: string[];
-  provider: TranslationProvider;
+  provider?: TranslationProvider;
   sourceLang: 'zh' | 'en';
   targetLang: 'zh' | 'en';
+  translated: boolean;
 };
+
+const PAGE_CACHE_KEY = 'pagecat.translationPages.v1';
+
+function pageCacheKey(bookId: string, page: number) {
+  return `${bookId}:${page}`;
+}
+
+function readAllCache(): Record<string, PageTranslation> {
+  try {
+    const raw = localStorage.getItem(PAGE_CACHE_KEY);
+    return raw ? (JSON.parse(raw) as Record<string, PageTranslation>) : {};
+  } catch {
+    return {};
+  }
+}
+
+function readBookCache(bookId: string) {
+  const all = readAllCache();
+  const map = new Map<number, PageTranslation>();
+  for (const [key, value] of Object.entries(all)) {
+    if (!key.startsWith(`${bookId}:`) || !value?.translated) continue;
+    map.set(value.page, value);
+  }
+  return map;
+}
+
+function persistPage(bookId: string, data: PageTranslation) {
+  try {
+    const all = readAllCache();
+    all[pageCacheKey(bookId, data.page)] = data;
+    const entries = Object.entries(all).slice(-300);
+    localStorage.setItem(PAGE_CACHE_KEY, JSON.stringify(Object.fromEntries(entries)));
+  } catch {
+    // history is best-effort; the current session still keeps it in memory
+  }
+}
 
 export function TranslationPanel({ book, doc, page, pageCount, onJump }: Props) {
   const [mode, setMode] = useState<'page' | 'book'>('page');
   const [data, setData] = useState<PageTranslation | null>(null);
   const [loading, setLoading] = useState(false);
+  const [translating, setTranslating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [translatedPages, setTranslatedPages] = useState<number[]>([]);
   const cache = useRef(new Map<number, PageTranslation>());
   const requestRef = useRef(0);
+  const pageRef = useRef(page);
   const speak = useTts((state) => state.speak);
   const toast = useToast((state) => state.push);
 
-  const loadPage = async (targetPage: number, force = false) => {
-    if (!force && cache.current.has(targetPage)) {
-      setData(cache.current.get(targetPage)!);
+  useEffect(() => {
+    pageRef.current = page;
+  }, [page]);
+
+  useEffect(() => {
+    const loaded = readBookCache(book.id);
+    cache.current = loaded;
+    setTranslatedPages([...loaded.keys()].sort((a, b) => a - b));
+    setData(null);
+    setError(null);
+  }, [book.id]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const request = requestRef.current + 1;
+    requestRef.current = request;
+
+    const cached = cache.current.get(page);
+    if (cached) {
+      setData(cached);
       setError(null);
+      setLoading(false);
       return;
     }
+
+    setData(null);
+    setError(null);
+    setLoading(true);
+    void (async () => {
+      try {
+        const paragraphs = await getPageParagraphs(doc, page);
+        if (cancelled || requestRef.current !== request) return;
+        const direction = directionFor(paragraphs.map((item) => item.text));
+        setData({
+          page,
+          paragraphs,
+          translations: [],
+          sourceLang: direction.sourceLang,
+          targetLang: direction.targetLang,
+          translated: false,
+        });
+      } catch (err) {
+        if (!cancelled && requestRef.current === request) setError(translationErrorMessage(err));
+      } finally {
+        if (!cancelled && requestRef.current === request) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [page, doc, book.id]);
+
+  const loadPageAgain = async () => {
     const request = requestRef.current + 1;
     requestRef.current = request;
     setLoading(true);
     setError(null);
-    if (!force) setData(null);
     try {
-      const paragraphs = await getPageParagraphs(doc, targetPage);
-      if (!paragraphs.length) {
-        const empty: PageTranslation = {
-          paragraphs: [],
-          translations: [],
-          provider: 'free',
-          sourceLang: 'en',
-          targetLang: 'zh',
-        };
-        cache.current.set(targetPage, empty);
-        if (requestRef.current === request) setData(empty);
-        return;
-      }
+      const paragraphs = await getPageParagraphs(doc, page);
+      if (requestRef.current !== request) return;
       const direction = directionFor(paragraphs.map((item) => item.text));
-      const outcome = await translateTexts(paragraphs.map((item) => item.text), {
-        context: `Book: ${book.titleZh || book.title}. Page ${targetPage}.`,
-        force,
-      });
-      const next: PageTranslation = {
+      setData({
+        page,
         paragraphs,
-        translations: outcome.texts,
-        provider: outcome.provider,
+        translations: [],
         sourceLang: direction.sourceLang,
         targetLang: direction.targetLang,
-      };
-      cache.current.set(targetPage, next);
-      if (requestRef.current === request) setData(next);
+        translated: false,
+      });
     } catch (err) {
       if (requestRef.current === request) setError(translationErrorMessage(err));
     } finally {
@@ -79,13 +151,38 @@ export function TranslationPanel({ book, doc, page, pageCount, onJump }: Props) 
     }
   };
 
-  useEffect(() => {
-    void loadPage(page);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, doc]);
-
-  const targetLabel = data?.targetLang === 'en' ? 'English' : '中文';
-  const providerLabel = data?.provider === 'ai' ? 'AI 翻译' : '免费翻译';
+  const translatePage = async (force = false) => {
+    if (!data || !data.paragraphs.length || translating) return;
+    const startedFor = data.page;
+    setTranslating(true);
+    setError(null);
+    try {
+      const outcome = await translateTexts(
+        data.paragraphs.map((item) => item.text),
+        {
+          context: `Book: ${book.titleZh || book.title}. Page ${data.page}.`,
+          force,
+        },
+      );
+      if (pageRef.current !== startedFor) return;
+      const next: PageTranslation = {
+        ...data,
+        translations: outcome.texts,
+        provider: outcome.provider,
+        sourceLang: outcome.sourceLang,
+        targetLang: outcome.targetLang,
+        translated: true,
+      };
+      cache.current.set(startedFor, next);
+      persistPage(book.id, next);
+      setData(next);
+      setTranslatedPages((previous) => [...new Set([...previous, startedFor])].sort((a, b) => a - b));
+    } catch (err) {
+      if (pageRef.current === startedFor) setError(translationErrorMessage(err));
+    } finally {
+      setTranslating(false);
+    }
+  };
 
   const speakSource = async () => {
     try {
@@ -100,11 +197,14 @@ export function TranslationPanel({ book, doc, page, pageCount, onJump }: Props) 
   const speakTarget = () => {
     const text = data?.translations.filter(Boolean).join(' ');
     if (!text) {
-      toast('译文还在生成中');
+      toast('先翻译这一页，再朗读译文');
       return;
     }
     speak(text, { label: `第 ${page} 页译文`, lang: data?.targetLang === 'zh' ? 'zh-CN' : 'en-US' });
   };
+
+  const targetLabel = data?.targetLang === 'en' ? 'English' : '中文';
+  const providerLabel = data?.provider === 'ai' ? 'AI 翻译' : '免费翻译';
 
   return (
     <div className="translate-panel">
@@ -115,7 +215,7 @@ export function TranslationPanel({ book, doc, page, pageCount, onJump }: Props) 
           </span>
           <div>
             <strong>双语对照</strong>
-            <span>{targetLabel}译文{data ? ` · ${providerLabel}` : ''}</span>
+            <span>{targetLabel}译文{data?.translated ? ` · ${providerLabel}` : ''}</span>
           </div>
         </div>
         <div className="translate-modes">
@@ -150,6 +250,25 @@ export function TranslationPanel({ book, doc, page, pageCount, onJump }: Props) 
         <button onClick={() => onJump(Math.min(pageCount, page + 1))} disabled={page >= pageCount} aria-label="下一页">
           <ChevronRight size={14} />
         </button>
+        {translatedPages.length > 0 && (
+          <select
+            className="translate-history"
+            value=""
+            title="已翻译页面"
+            aria-label="翻译历史"
+            onChange={(e) => {
+              const target = Number(e.target.value);
+              if (target) onJump(target);
+            }}
+          >
+            <option value="">已译 {translatedPages.length} 页</option>
+            {translatedPages.map((item) => (
+              <option key={item} value={item}>
+                第 {item} 页
+              </option>
+            ))}
+          </select>
+        )}
         <span className="translate-spacer" />
         <button className="translate-icon-btn" onClick={speakSource} title="朗读原文" aria-label="朗读原文">
           <Volume2 size={14} />
@@ -157,15 +276,17 @@ export function TranslationPanel({ book, doc, page, pageCount, onJump }: Props) 
         <button className="translate-icon-btn" onClick={speakTarget} title="朗读译文" aria-label="朗读译文">
           <Volume2 size={14} />
         </button>
-        <button className="translate-icon-btn" onClick={() => void loadPage(page, true)} title="重新翻译" aria-label="重新翻译" disabled={loading}>
-          <RefreshCw size={13} className={loading ? 'spin' : ''} />
-        </button>
+        {data?.translated && (
+          <button className="translate-icon-btn" onClick={() => void translatePage(true)} title="重新翻译" aria-label="重新翻译" disabled={translating}>
+            <RefreshCw size={13} className={translating ? 'spin' : ''} />
+          </button>
+        )}
       </div>
 
       {mode === 'book' && (
         <div className="translate-book-note">
-          <span>整本对照 · 按页翻译</span>
-          <span>按页切换即可</span>
+          <span>整本对照 · 按页查看</span>
+          <span>已译页面会保留</span>
         </div>
       )}
 
@@ -173,20 +294,32 @@ export function TranslationPanel({ book, doc, page, pageCount, onJump }: Props) 
         {loading && !data && (
           <div className="translate-loading">
             <Loader2 size={18} className="spin" />
-            <span>正在翻译这一页…</span>
+            <span>正在读取这一页…</span>
           </div>
         )}
         {error && (
           <div className="translate-error">
-            <strong>这一页没有翻译成功</strong>
+            <strong>没有翻译成功</strong>
             <p>{error}</p>
-            <button onClick={() => void loadPage(page, true)}>再试一次</button>
+            <button onClick={() => (data?.paragraphs.length ? void translatePage(true) : void loadPageAgain())}>再试一次</button>
           </div>
         )}
         {!error && data && data.paragraphs.length === 0 && (
           <div className="translate-empty">
             <Languages size={20} />
             <p>这一页没有可提取的文字。</p>
+          </div>
+        )}
+        {!error && data && data.paragraphs.length > 0 && !data.translated && (
+          <div className="translate-cta">
+            <div>
+              <strong>这一页还没有翻译</strong>
+              <span>只有点击后才调用翻译；滚动切换页面不会自动翻译。</span>
+            </div>
+            <button onClick={() => void translatePage()} disabled={translating}>
+              {translating ? <Loader2 size={13} className="spin" /> : <Languages size={13} />}
+              {translating ? '翻译中…' : '翻译本页'}
+            </button>
           </div>
         )}
         {!error &&
@@ -199,27 +332,28 @@ export function TranslationPanel({ book, doc, page, pageCount, onJump }: Props) 
                   <Volume2 size={12} />
                 </button>
               </div>
-              <div className="translation-target">
-                {loading && !data.translations[index] ? (
-                  <span className="translation-skeleton" />
-                ) : (
-                  <p>{data.translations[index] || '—'}</p>
-                )}
-                {data.translations[index] && (
-                  <button onClick={() => speak(data.translations[index], { label: `第 ${page} 页译文`, lang: data.targetLang === 'zh' ? 'zh-CN' : 'en-US' })} aria-label="朗读这句译文" title="朗读译文">
-                    <Volume2 size={12} />
-                  </button>
-                )}
-              </div>
+              {data.translated && (
+                <div className="translation-target">
+                  {translating && !data.translations[index] ? (
+                    <span className="translation-skeleton" />
+                  ) : (
+                    <p>{data.translations[index] || '—'}</p>
+                  )}
+                  {data.translations[index] && (
+                    <button onClick={() => speak(data.translations[index], { label: `第 ${page} 页译文`, lang: data.targetLang === 'zh' ? 'zh-CN' : 'en-US' })} aria-label="朗读这句译文" title="朗读译文">
+                      <Volume2 size={12} />
+                    </button>
+                  )}
+                </div>
+              )}
+              {translating && !data.translated && <span className="translation-skeleton" />}
             </article>
           ))}
       </div>
 
       <footer className="translate-foot">
         <span>
-          {data?.provider === 'ai'
-            ? '译文由你的 AI 接口生成，可能不准确，请对照原文。'
-            : '免费翻译会把当前文字发送到翻译服务；整本建议接入 AI。'}
+          翻译只在你点击时生成，已译页面会保留；免费翻译会把当前文字发送到翻译服务。
         </span>
       </footer>
     </div>

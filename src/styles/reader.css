@@ -1957,7 +1957,8 @@ body,
   white-space: nowrap;
 }
 
-.translate-page-select select {
+.translate-page-select select,
+.translate-history {
   margin: 0 3px;
   padding: 2px 3px;
   border: 1px solid var(--sidebar-line);
@@ -1968,8 +1969,62 @@ body,
   font-size: 9px;
 }
 
+.translate-history {
+  max-width: 82px;
+  margin-left: 2px;
+  color: var(--sidebar-muted);
+}
+
 .translate-spacer {
   flex: 1;
+}
+
+.translate-cta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 14px 0 4px;
+  padding: 11px 12px;
+  border-radius: 8px;
+  border: 1px dashed var(--sidebar-line);
+  background: var(--sidebar-soft);
+}
+
+.translate-cta strong {
+  display: block;
+  font-size: 10px;
+  color: var(--sidebar-ink);
+}
+
+.translate-cta span {
+  display: block;
+  margin-top: 2px;
+  font-size: 8px;
+  line-height: 1.45;
+  color: var(--sidebar-muted);
+}
+
+.translate-cta > button {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 30px;
+  padding: 0 11px;
+  border-radius: 7px;
+  background: #a97c45;
+  color: #fff8ea;
+  font-size: 9px;
+  box-shadow: 0 6px 14px -8px rgba(90, 60, 28, 0.8);
+}
+
+.translate-cta > button:hover {
+  background: #996d39;
+}
+
+.translate-cta > button:disabled {
+  opacity: 0.65;
 }
 
 .translate-book-note {
@@ -2142,7 +2197,10 @@ body,
 .selection-translation {
   position: fixed;
   z-index: 95;
+  display: flex;
+  flex-direction: column;
   max-width: calc(100vw - 24px);
+  max-height: calc(100vh - 24px);
   padding: 12px 14px 10px;
   border-radius: 12px;
   background: linear-gradient(180deg, #fcf4e5, #f1e3ce);
@@ -2157,6 +2215,16 @@ body,
   transform: translate(-50%, 0);
 }
 
+.selection-translation.dragged,
+.selection-translation.is-dragging {
+  transform: none;
+  animation: none;
+}
+
+.selection-translation.is-dragging {
+  box-shadow: 0 26px 60px -16px rgba(0, 0, 0, 0.7);
+}
+
 @keyframes translate-card-in {
   from { opacity: 0; transform: translate(-50%, calc(-100% + 5px)); }
 }
@@ -2164,12 +2232,33 @@ body,
 .st-head {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  flex: none;
+  padding-bottom: 2px;
   font-size: 8px;
   font-family: var(--font-mono);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #8a7052;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+
+.is-dragging .st-head {
+  cursor: grabbing;
+}
+
+.st-grip {
+  opacity: 0.5;
+  margin-right: -2px;
+}
+
+.st-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
 }
 
 .st-provider {
@@ -2188,11 +2277,12 @@ body,
 
 .st-source {
   margin: 8px 0 7px;
-  max-height: 58px;
-  overflow: hidden;
+  padding-right: 2px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
   font-family: var(--font-read);
   font-size: 11px;
-  line-height: 1.5;
+  line-height: 1.55;
   color: #6e563e;
 }
 
@@ -2223,6 +2313,7 @@ body,
 
 .st-actions {
   display: flex;
+  flex: none;
   gap: 10px;
   margin-top: 9px;
 }

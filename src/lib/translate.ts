@@ -87,13 +87,13 @@ async function fetchWithTimeout(url: string, timeout = 15000) {
   }
 }
 
-async function freeTranslateParagraph(text: string, sourceLang: TranslationLang, targetLang: TranslationLang) {
+async function freeTranslateParagraph(text: string, sourceLang: TranslationLang, targetLang: TranslationLang, force = false) {
   const chunks = splitChunks(text);
   const translated: string[] = [];
   for (const chunk of chunks) {
     const key = `free:${sourceLang}:${targetLang}:${chunk}`;
     const cached = cacheGet(key);
-    if (cached) {
+    if (cached && !force) {
       translated.push(cached);
       continue;
     }
@@ -218,7 +218,7 @@ export async function translateTexts(
       translated.push(cached);
       continue;
     }
-    translated.push(await freeTranslateParagraph(text, sourceLang, targetLang));
+    translated.push(await freeTranslateParagraph(text, sourceLang, targetLang, options.force));
   }
   return { texts: translated, provider: 'free', sourceLang, targetLang };
 }
