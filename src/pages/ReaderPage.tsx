@@ -239,15 +239,10 @@ export function ReaderPage() {
     setScale(effectiveScale);
   }, [effectiveScale]);
 
-  const scrollToPage = useCallback((page: number, behavior: ScrollBehavior = 'smooth') => {
-    const scroll = scrollRef.current;
-    if (!scroll) return;
-    const block = scroll.querySelector<HTMLElement>(`.page-block[data-page="${page}"]`);
-    if (!block) return;
-    const top = block.getBoundingClientRect().top - scroll.getBoundingClientRect().top + scroll.scrollTop - 20;
-    scroll.scrollTo({ top: Math.max(0, top), behavior });
+  const scrollToPage = useCallback((page: number, _behavior: ScrollBehavior = 'auto') => {
     setCurrentPage(page);
     setPageDraft(String(page));
+    scrollRef.current?.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   }, []);
 
   const showPageTurn = async (direction: 'next' | 'prev', targetPage?: number) => {
@@ -334,34 +329,6 @@ export function ReaderPage() {
   const turnToPage = (direction: 'next' | 'prev', page: number) => {
     void showPageTurn(direction, page).finally(() => scrollToPage(page, 'auto'));
   };
-
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    let raf = 0;
-    const onScroll = () => {
-      if (raf) return;
-      raf = requestAnimationFrame(() => {
-        raf = 0;
-        if (turning.current) return;
-        const top = el.getBoundingClientRect().top;
-        const blocks = el.querySelectorAll<HTMLElement>('.page-block');
-        let page = 1;
-        for (const block of blocks) {
-          const rect = block.getBoundingClientRect();
-          if (rect.top - top <= 180) page = Number(block.dataset.page);
-          else break;
-        }
-        setCurrentPage(page);
-        setPageDraft(String(page));
-      });
-    };
-    el.addEventListener('scroll', onScroll, { passive: true });
-    return () => {
-      el.removeEventListener('scroll', onScroll);
-      if (raf) cancelAnimationFrame(raf);
-    };
-  }, [doc, baseReady]);
 
   useEffect(() => {
     if (!book || !doc) return;
@@ -760,38 +727,29 @@ export function ReaderPage() {
 
       <div className="reader-body">
         <main className="reader-scroll" ref={scrollRef}>
-          <div className="pages">
-            {baseReady &&
-              Array.from({ length: totalPages }, (_, index) => (
-                <PageView
-                  key={index + 1}
-                  doc={doc!}
-                  pageNumber={index + 1}
-                  scale={scale}
-                  baseWidth={base.w}
-                  baseHeight={base.h}
-                  annotations={annotations}
-                  activeId={activeAnnotationId ?? undefined}
-                  flashId={flashId}
-                  scrollRoot={scrollRef}
-                  onRendered={(page) => renderedPages.current.add(page)}
-                  onRectsResolved={(id, rects) => void annStore.setRects(id, rects)}
-                />
-              ))}
-            {!baseReady && (
+          <div className="pages single-page">
+            {baseReady ? (
+              <PageView
+                key={currentPage}
+                doc={doc!}
+                pageNumber={currentPage}
+                scale={scale}
+                baseWidth={base.w}
+                baseHeight={base.h}
+                annotations={annotations}
+                activeId={activeAnnotationId ?? undefined}
+                flashId={flashId}
+                scrollRoot={scrollRef}
+                onRendered={(page) => renderedPages.current.add(page)}
+                onRectsResolved={(id, rects) => void annStore.setRects(id, rects)}
+              />
+            ) : (
               <div className="reader-page-skeleton">
                 <span />
                 <span />
                 <span />
               </div>
             )}
-          </div>
-          <div className="reader-end">
-            <span className="end-mark">❦</span>
-            <p>读到这里了。合上书，或者再往前翻一页。</p>
-            <button className="btn btn-ghost" onClick={() => navigate('/')}>
-              回到书架
-            </button>
           </div>
         </main>
 
