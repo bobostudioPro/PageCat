@@ -41,6 +41,23 @@ import { Logo } from '../components/ui/Logo';
 
 type PopoverAnchor = { x: number; y: number; top: number; bottom: number };
 type SidebarState = { open: boolean; tab: ReaderTab };
+function capturePageSnapshot(canvas: HTMLCanvasElement | null | undefined, theme: 'paper' | 'sepia' | 'night') {
+  if (!canvas) return undefined;
+  try {
+    if (theme === 'paper') return canvas.toDataURL('image/jpeg', 0.84);
+    const off = document.createElement('canvas');
+    off.width = canvas.width;
+    off.height = canvas.height;
+    const ctx = off.getContext('2d');
+    if (!ctx) return canvas.toDataURL('image/jpeg', 0.84);
+    ctx.filter = theme === 'sepia' ? 'sepia(0.42) saturate(0.8) brightness(0.95) contrast(1.03)' : 'invert(1) hue-rotate(180deg) brightness(0.9) contrast(1.04)';
+    ctx.drawImage(canvas, 0, 0);
+    return off.toDataURL('image/jpeg', 0.84);
+  } catch {
+    return undefined;
+  }
+}
+
 type SelectionTranslation = {
   source: string;
   target: string;
@@ -230,46 +247,71 @@ export function ReaderPage() {
     setPageDraft(String(page));
   }, []);
 
-  const showPageTurn = (direction: 'next' | 'prev') => {
-    const pageEl = scrollRef.current?.querySelector<HTMLElement>(`.page-block[data-page="${currentPage}"] .pdf-page`);
+  const showPageTurn = async (direction: 'next' | 'prev', targetPage?: number) => {
+    const scroll = scrollRef.current;
+    if (!scroll) return;
+    const scrollRect = scroll.getBoundingClientRect();
+    const blocks = [...scroll.querySelectorAll<HTMLElement>('.page-block')];
+    const nearest = blocks
+      .filter((block) => {
+        const r = block.getBoundingClientRect();
+        return r.bottom > scrollRect.top + 70 && r.top < scrollRect.bottom - 40;
+      })
+      .sort((a, b) => {
+        const ra = a.getBoundingClientRect();
+        const rb = b.getBoundingClientRect();
+        return Math.abs(ra.top - scrollRect.top) - Math.abs(rb.top - scrollRect.top);
+      })[0];
+    const pageEl = nearest?.querySelector<HTMLElement>('.pdf-page');
     if (!pageEl) return;
     const rect = pageEl.getBoundingClientRect();
     const top = Math.max(62, rect.top);
     const height = Math.min(rect.height, window.innerHeight - top - 8);
     if (height < 120 || rect.width < 80) return;
-    const canvas = pageEl.querySelector<HTMLCanvasElement>('canvas');
-    let image: string | undefined;
-    try {
-      image = canvas?.toDataURL('image/jpeg', 0.84);
-    } catch {
-      image = undefined;
+
+    const currentBlock = pageEl.closest('.page-block') as HTMLElement | null;
+    const currentPage = Number(currentBlock?.dataset.page);
+    let image = capturePageSnapshot(pageEl.querySelector<HTMLCanvasElement>('canvas'), theme);
+    let nextImage: string | undefined;
+
+    if (targetPage && targetPage !== currentPage) {
+      const existing = scroll.querySelector<HTMLCanvasElement>(`.page-block[data-page="${targetPage}"] .pdf-page canvas`);
+      nextImage = capturePageSnapshot(existing, theme);
+      if (!nextImage && doc) {
+        try {
+          const target = await doc.getPage(targetPage);
+          const viewport = target.getViewport({ scale });
+          const off = document.createElement('canvas');
+          off.width = Math.max(1, Math.floor(viewport.width));
+          off.height = Math.max(1, Math.floor(viewport.height));
+          const ctx = off.getContext('2d');
+          if (ctx) {
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, off.width, off.height);
+            await target.render({ canvas: off, viewport, background: '#ffffff' }).promise;
+            nextImage = capturePageSnapshot(off, theme);
+          }
+          target.cleanup();
+        } catch {
+          nextImage = undefined;
+        }
+      }
     }
+
     if (pageTurnTimer.current) window.clearTimeout(pageTurnTimer.current);
     setPageTurn({
       id: Date.now(),
       direction,
       image,
+      nextImage,
       rect: { left: rect.left, top, width: rect.width, height },
     });
-    pageTurnTimer.current = window.setTimeout(() => setPageTurn(null), 1250);
+    pageTurnTimer.current = window.setTimeout(() => setPageTurn(null), 1200);
   };
 
-  // Restore last position once the first page's dimensions are known.
-  useEffect(() => {
-    if (!book || !doc || !baseReady || restored.current) return;
-    restored.current = true;
-    const target = book.lastPage ?? 1;
-    window.setTimeout(() => scrollToPage(target, 'auto'), 120);
-  }, [book, doc, baseReady, scrollToPage]);
-
-  // Keep the current page anchored after zoom / sidebar resize.
-  useEffect(() => {
-    if (!baseReady || !restored.current) return;
-    if (Math.abs(lastScale.current - scale) < 0.001) return;
-    lastScale.current = scale;
-    window.setTimeout(() => scrollToPage(currentPage, 'auto'), 60);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scale]);
+  const turnToPage = (direction: 'next' | 'prev', page: number) => {
+    void showPageTurn(direction, page).finally(() => scrollToPage(page));
+  };
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -445,8 +487,8 @@ export function ReaderPage() {
   };
 
   const jumpTo = (page: number, annotationId?: string) => {
-    if (page !== currentPage) showPageTurn(page > currentPage ? 'next' : 'prev');
-    scrollToPage(page);
+    if (page !== currentPage) turnToPage(page > currentPage ? 'next' : 'prev', page);
+    else scrollToPage(page);
     if (annotationId) {
       setFlashId(annotationId);
       if (flashTimer.current) window.clearTimeout(flashTimer.current);
@@ -457,8 +499,8 @@ export function ReaderPage() {
   };
 
   const jumpToPanel = (page: number) => {
-    if (page !== currentPage) showPageTurn(page > currentPage ? 'next' : 'prev');
-    scrollToPage(page);
+    if (page !== currentPage) turnToPage(page > currentPage ? 'next' : 'prev', page);
+    else scrollToPage(page);
   };
 
   const toggleTheme = () => {
@@ -476,8 +518,8 @@ export function ReaderPage() {
   const goPage = (delta: number) => {
     if (!book) return;
     const next = clamp(currentPage + delta, 1, book.pageCount);
-    if (next !== currentPage) showPageTurn(delta > 0 ? 'next' : 'prev');
-    scrollToPage(next);
+    if (next !== currentPage) turnToPage(delta > 0 ? 'next' : 'prev', next);
+    else scrollToPage(next);
   };
 
   const commitPageDraft = () => {
@@ -485,8 +527,8 @@ export function ReaderPage() {
     const value = Number(pageDraft);
     if (Number.isFinite(value) && value >= 1) {
       const target = clamp(Math.round(value), 1, book.pageCount);
-      if (target !== currentPage) showPageTurn(target > currentPage ? 'next' : 'prev');
-      scrollToPage(target);
+      if (target !== currentPage) turnToPage(target > currentPage ? 'next' : 'prev', target);
+      else scrollToPage(target);
     } else {
       setPageDraft(String(currentPage));
     }

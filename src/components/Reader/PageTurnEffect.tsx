@@ -5,6 +5,7 @@ export type PageTurnState = {
   direction: 'next' | 'prev';
   rect: { left: number; top: number; width: number; height: number };
   image?: string;
+  nextImage?: string;
 };
 
 export function PageTurnEffect({ turn, theme }: { turn: PageTurnState | null; theme: 'paper' | 'sepia' | 'night' }) {
@@ -15,16 +16,16 @@ export function PageTurnEffect({ turn, theme }: { turn: PageTurnState | null; th
       style={{ left: turn.rect.left, top: turn.rect.top, width: turn.rect.width, height: turn.rect.height }}
       aria-hidden="true"
     >
-      <span className="page-turn-shade" />
+      <span className="page-turn-next" style={turn.nextImage ? { backgroundImage: `url("${turn.nextImage}")` } : undefined} />
       <span className="page-turn-face">
-        <span className="page-turn-front">
-          {turn.image && <span className="page-turn-page-image" style={{ backgroundImage: `url("${turn.image}")` }} />}
+        <span className="page-turn-front" style={turn.image ? { backgroundImage: `url("${turn.image}")` } : undefined}>
           <span className="page-turn-grain" />
         </span>
         <span className="page-turn-back">
           <span className="page-turn-grain" />
         </span>
       </span>
+      <span className="page-turn-shade" />
     </div>,
     document.body,
   );
