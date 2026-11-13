@@ -2684,3 +2684,43 @@ body,
 }
 
 
+
+
+/* ---------- click-to-turn page gutters ---------- */
+.page-click-zone {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: max(26px, calc((100% - var(--page-w, 620px)) / 2 - 14px));
+  padding: 0;
+  border: 0;
+  color: rgba(255, 244, 224, 0.28);
+  background: transparent;
+  cursor: pointer;
+  transition: color 0.18s ease, background 0.18s ease;
+}
+
+.page-click-zone.prev {
+  left: 0;
+}
+
+.page-click-zone.next {
+  right: 0;
+}
+
+.page-click-zone:hover:not(:disabled) {
+  color: rgba(255, 244, 224, 0.8);
+  background: linear-gradient(90deg, rgba(255, 241, 218, 0.05), transparent);
+}
+
+.page-click-zone.next:hover:not(:disabled) {
+  background: linear-gradient(270deg, rgba(255, 241, 218, 0.05), transparent);
+}
+
+.page-click-zone:disabled {
+  opacity: 0.25;
+  cursor: default;
+}

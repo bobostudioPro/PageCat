@@ -123,6 +123,7 @@ export function ReaderPage() {
   const pageTurnTimer = useRef<number | undefined>(undefined);
   const renderedPages = useRef(new Set<number>());
   const pageTurnTarget = useRef<number | undefined>(undefined);
+  const pageTurnSerial = useRef(0);
   const turning = useRef(false);
 
   const theme = settings.readerTheme;
@@ -130,6 +131,7 @@ export function ReaderPage() {
   const activeNote = activeAnnotation?.noteId ? notes.find((n) => n.id === activeAnnotation.noteId) : undefined;
   const switchReadMode = (mode: 'paged' | 'scroll') => {
     if (mode === readMode) return;
+    pageTurnSerial.current += 1;
     if (pageTurnTimer.current) window.clearTimeout(pageTurnTimer.current);
     setPageTurn(null);
     turning.current = false;
@@ -285,6 +287,7 @@ export function ReaderPage() {
   const showPageTurn = async (direction: 'next' | 'prev', targetPage?: number) => {
     const scroll = scrollRef.current;
     if (!scroll) return;
+    const serial = ++pageTurnSerial.current;
     const scrollRect = scroll.getBoundingClientRect();
     const blocks = [...scroll.querySelectorAll<HTMLElement>('.page-block')];
     const nearest = blocks
@@ -338,6 +341,7 @@ export function ReaderPage() {
       }
     }
 
+    if (serial !== pageTurnSerial.current) return;
     if (pageTurnTimer.current) window.clearTimeout(pageTurnTimer.current);
     pageTurnTarget.current = targetPage;
     const started = performance.now();
@@ -351,11 +355,14 @@ export function ReaderPage() {
     const finish = () => {
       const target = pageTurnTarget.current;
       const ready = !target || renderedPages.current.has(target);
+      if (serial !== pageTurnSerial.current) return;
       if (ready || performance.now() - started > 2600) {
         if (target) scrollToPage(target, 'auto');
         window.setTimeout(() => {
+          if (serial !== pageTurnSerial.current) return;
           if (target) scrollToPage(target, 'auto');
           window.setTimeout(() => {
+            if (serial !== pageTurnSerial.current) return;
             setPageTurn(null);
             turning.current = false;
           }, 160);
@@ -899,7 +906,32 @@ export function ReaderPage() {
 
       <div className="reader-body">
         <main className="reader-scroll" ref={scrollRef}>
-          <div className={`pages ${readMode === 'paged' ? 'single-page' : 'scroll-pages'}`}>
+          <div
+            className={`pages ${readMode === 'paged' ? 'single-page' : 'scroll-pages'}`}
+            style={{ ['--page-w' as string]: `${base.w * scale}px` }}
+          >
+            {readMode === 'paged' && baseReady && base.w * scale + 96 < viewportWidth && (
+              <>
+                <button
+                  className="page-click-zone prev"
+                  onClick={() => goPage(-1)}
+                  disabled={currentPage <= 1}
+                  aria-label="点击左侧上一页"
+                  title="上一页"
+                >
+                  <ChevronLeft size={26} />
+                </button>
+                <button
+                  className="page-click-zone next"
+                  onClick={() => goPage(1)}
+                  disabled={currentPage >= totalPages}
+                  aria-label="点击右侧下一页"
+                  title="下一页"
+                >
+                  <ChevronRight size={26} />
+                </button>
+              </>
+            )}
             {baseReady ? (
               readMode === 'paged' ? (
                 <PageView
