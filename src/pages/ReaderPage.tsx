@@ -231,7 +231,7 @@ export function ReaderPage() {
 
   const gutter = viewportWidth > 1000 ? 58 : viewportWidth > 640 ? 30 : 14;
   const widthFit = viewportWidth ? Math.max(0.2, (viewportWidth - gutter * 2) / base.w) : 1;
-  const heightFit = viewportHeight ? Math.max(0.2, (viewportHeight - 118) / base.h) : widthFit;
+  const heightFit = viewportHeight ? Math.max(0.2, (viewportHeight - 48) / base.h) : widthFit;
   const fitScale = Math.min(widthFit, heightFit);
   const effectiveScale = clamp(fitScale * zoom, 0.2, 3.2);
 
@@ -497,14 +497,31 @@ export function ReaderPage() {
     else scrollToPage(page);
   };
 
-  const jumpToSection = (page: number) => {
+  const scrollToHeading = (title: string) => {
+    const scroll = scrollRef.current;
+    if (!scroll) return;
+    const needle = title.replace(/\s+/g, '').slice(0, 28).toLowerCase();
+    if (!needle) return;
+    const spans = [...scroll.querySelectorAll<HTMLElement>('.textLayer span')];
+    const target = spans.find((span) => (span.textContent || '').replace(/\s+/g, '').toLowerCase().includes(needle));
+    if (!target) return;
+    const top =
+      target.getBoundingClientRect().top - scroll.getBoundingClientRect().top + scroll.scrollTop - 96;
+    scroll.scrollTo({ top: Math.max(0, top), behavior: 'auto' });
+  };
+
+  const jumpToSection = (page: number, title?: string) => {
     if (page !== currentPage) {
       turnToPage(page > currentPage ? 'next' : 'prev', page);
-      return;
+    } else {
+      // Same page: still run the book-style turn so the section click is never silent.
+      turning.current = true;
+      void showPageTurn('next', page);
     }
-    // Same page: still run the book-style turn so the section click is never silent.
-    turning.current = true;
-    void showPageTurn('next', page);
+    if (title) {
+      window.setTimeout(() => scrollToHeading(title), 1500);
+      window.setTimeout(() => scrollToHeading(title), 2300);
+    }
   };
 
   const toggleTheme = () => {

@@ -6,7 +6,7 @@ type Props = {
   currentPage: number;
   pageCount: number;
   percent: number;
-  onJump: (page: number) => void;
+  onJump: (page: number, title?: string) => void;
 };
 
 export function OutlinePanel({ toc, currentPage, pageCount, percent, onJump }: Props) {
@@ -38,7 +38,7 @@ export function OutlinePanel({ toc, currentPage, pageCount, percent, onJump }: P
               <button
                 key={`${item.title}-${i}`}
                 className={`outline-item lvl-${item.level} ${active ? 'active' : ''} ${near && !active ? 'near' : ''}`}
-                onClick={() => onJump(item.page)}
+                onClick={() => onJump(item.page, item.title)}
               >
                 <span className="outline-page">{String(item.page).padStart(2, '0')}</span>
                 <span className="outline-title">{item.title}</span>

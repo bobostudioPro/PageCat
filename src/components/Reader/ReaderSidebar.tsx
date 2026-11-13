@@ -25,7 +25,7 @@ type Props = {
   aiExternal?: ExternalReference | null;
   onJump: (page: number, annotationId?: string) => void;
   onJumpPanel: (page: number) => void;
-  onJumpSection: (page: number) => void;
+  onJumpSection: (page: number, title?: string) => void;
   onFavorite: (annotation: Annotation, value: boolean) => void;
   onRemoveAnnotation: (annotation: Annotation) => void;
   onAddNote: (text: string) => Promise<void>;
