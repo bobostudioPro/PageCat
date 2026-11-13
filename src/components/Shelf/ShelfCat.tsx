@@ -232,11 +232,23 @@ export function ShelfCat({ dragActive = false, x = 82, dragging = false, movable
         <img className="cat-figure" src={`${decorBase}${catImage}`} alt="" draggable={false} />
       </button>
 
-      <button className="cat-toy" onClick={play} aria-label="把毛线球推给猫玩" title="陪猫玩毛线球">
+      <button
+        className="cat-toy"
+        onClick={play}
+        aria-label="把毛线球推给猫玩"
+        title="陪猫玩毛线球"
+        style={mood === 'playing' ? { opacity: 0, pointerEvents: 'none' } : undefined}
+      >
         <img src={`${decorBase}cat-toy.webp`} alt="" draggable={false} />
       </button>
 
-      <button className="cat-bowl" onClick={feed} aria-label="喂猫吃小鱼干" title="喂猫">
+      <button
+        className="cat-bowl"
+        onClick={feed}
+        aria-label="喂猫吃小鱼干"
+        title="喂猫"
+        style={mood === 'eating' ? { opacity: 0, pointerEvents: 'none' } : undefined}
+      >
         <img src={`${decorBase}cat-bowl.webp`} alt="" draggable={false} />
       </button>
 

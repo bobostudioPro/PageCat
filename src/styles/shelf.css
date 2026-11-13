@@ -2744,3 +2744,11 @@
   bottom: 0;
   height: 64px;
 }
+
+
+.shelf-cat.playing .cat-toy,
+.shelf-cat.eating .cat-bowl {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(4px) scale(0.9);
+}
