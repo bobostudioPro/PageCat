@@ -497,31 +497,50 @@ export function ReaderPage() {
     else scrollToPage(page);
   };
 
-  const scrollToHeading = (title: string) => {
+  const scrollToHeading = (title: string, behavior: ScrollBehavior = 'smooth') => {
     const scroll = scrollRef.current;
-    if (!scroll) return;
+    if (!scroll) return false;
     const needle = title.replace(/\s+/g, '').slice(0, 28).toLowerCase();
-    if (!needle) return;
+    if (!needle) {
+      scroll.scrollTo({ top: 0, behavior });
+      return false;
+    }
     const spans = [...scroll.querySelectorAll<HTMLElement>('.textLayer span')];
     const target = spans.find((span) => (span.textContent || '').replace(/\s+/g, '').toLowerCase().includes(needle));
-    if (!target) return;
+    if (!target) {
+      scroll.scrollTo({ top: 0, behavior });
+      return false;
+    }
     const top =
       target.getBoundingClientRect().top - scroll.getBoundingClientRect().top + scroll.scrollTop - 96;
-    scroll.scrollTo({ top: Math.max(0, top), behavior: 'auto' });
+    scroll.scrollTo({ top: Math.max(0, top), behavior });
+    target.classList.remove('heading-flash');
+    void target.offsetWidth;
+    target.classList.add('heading-flash');
+    window.setTimeout(() => target.classList.remove('heading-flash'), 1800);
+    const pageEl = scroll.querySelector<HTMLElement>('.pdf-page');
+    if (pageEl) {
+      pageEl.classList.remove('section-flash');
+      void pageEl.offsetWidth;
+      pageEl.classList.add('section-flash');
+      window.setTimeout(() => pageEl.classList.remove('section-flash'), 900);
+    }
+    return true;
   };
 
   const jumpToSection = (page: number, title?: string) => {
     if (page !== currentPage) {
       turnToPage(page > currentPage ? 'next' : 'prev', page);
-    } else {
-      // Same page: still run the book-style turn so the section click is never silent.
-      turning.current = true;
-      void showPageTurn('next', page);
+      if (title) {
+        window.setTimeout(() => scrollToHeading(title, 'auto'), 1500);
+        window.setTimeout(() => scrollToHeading(title, 'auto'), 2300);
+      }
+      return;
     }
-    if (title) {
-      window.setTimeout(() => scrollToHeading(title), 1500);
-      window.setTimeout(() => scrollToHeading(title), 2300);
-    }
+    // A section already on this page cannot flip to a new page. Move to the
+    // heading and flash it instead of shaking the current sheet.
+    if (title) scrollToHeading(title, 'smooth');
+    else scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const toggleTheme = () => {
