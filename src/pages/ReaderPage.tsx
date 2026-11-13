@@ -511,9 +511,13 @@ export function ReaderPage() {
       scroll.scrollTo({ top: 0, behavior });
       return false;
     }
-    const top =
-      target.getBoundingClientRect().top - scroll.getBoundingClientRect().top + scroll.scrollTop - 96;
-    scroll.scrollTo({ top: Math.max(0, top), behavior });
+    const targetRect = target.getBoundingClientRect();
+    const scrollRect = scroll.getBoundingClientRect();
+    const visible = targetRect.top >= scrollRect.top + 88 && targetRect.bottom <= scrollRect.bottom - 20;
+    if (!visible) {
+      const top = targetRect.top - scrollRect.top + scroll.scrollTop - 96;
+      scroll.scrollTo({ top: Math.max(0, top), behavior });
+    }
     target.classList.remove('heading-flash');
     void target.offsetWidth;
     target.classList.add('heading-flash');
@@ -528,30 +532,6 @@ export function ReaderPage() {
     return true;
   };
 
-  const playSectionSweep = () => {
-    const scroll = scrollRef.current;
-    const pageEl = scroll?.querySelector<HTMLElement>('.pdf-page');
-    if (!scroll || !pageEl) return false;
-    const scrollRect = scroll.getBoundingClientRect();
-    const rect = pageEl.getBoundingClientRect();
-    const top = Math.max(62, scrollRect.top + 20);
-    const height = Math.min(rect.height, window.innerHeight - top - 8);
-    if (height < 120 || rect.width < 80) return false;
-    turning.current = true;
-    if (pageTurnTimer.current) window.clearTimeout(pageTurnTimer.current);
-    setPageTurn({
-      id: Date.now(),
-      direction: 'next',
-      samePage: true,
-      rect: { left: rect.left, top, width: rect.width, height },
-    });
-    pageTurnTimer.current = window.setTimeout(() => {
-      setPageTurn(null);
-      turning.current = false;
-    }, 740);
-    return true;
-  };
-
   const jumpToSection = (page: number, title?: string) => {
     if (page !== currentPage) {
       turnToPage(page > currentPage ? 'next' : 'prev', page);
@@ -561,13 +541,10 @@ export function ReaderPage() {
       }
       return;
     }
-    // Same page: sweep a paper leaf across the sheet and move to the heading
-    // while it is covered, so the section change never looks like a page shake.
-    const swept = playSectionSweep();
-    if (title) {
-      if (swept) window.setTimeout(() => scrollToHeading(title, 'auto'), 190);
-      else scrollToHeading(title, 'smooth');
-    }
+    // Same page: a flip has nowhere to go. If the heading is already visible
+    // only flash it; otherwise move it into view and flash it.
+    if (title) scrollToHeading(title, 'smooth');
+    else scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const toggleTheme = () => {
