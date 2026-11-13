@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
+  AlignJustify,
   ArrowLeft,
+  BookOpen,
   ChevronLeft,
   ChevronRight,
   Lamp,
@@ -89,6 +91,13 @@ export function ReaderPage() {
   const [viewportWidth, setViewportWidth] = useState(0);
   const [viewportHeight, setViewportHeight] = useState(0);
   const [currentPage, setCurrentPage] = useState(book?.lastPage ?? 1);
+  const [readMode, setReadMode] = useState<'paged' | 'scroll'>(() => {
+    try {
+      return localStorage.getItem('pagecat.readMode') === 'scroll' ? 'scroll' : 'paged';
+    } catch {
+      return 'paged';
+    }
+  });
   const [pageDraft, setPageDraft] = useState(String(book?.lastPage ?? 1));
   const [toc, setToc] = useState<OutlineItem[]>(book?.toc ?? []);
   const [sidebar, setSidebar] = useState<SidebarState>({ open: typeof window !== 'undefined' && window.innerWidth > 1024, tab: 'toc' });
@@ -119,6 +128,17 @@ export function ReaderPage() {
   const theme = settings.readerTheme;
   const activeAnnotation = activeAnnotationId ? annotations.find((a) => a.id === activeAnnotationId) ?? null : null;
   const activeNote = activeAnnotation?.noteId ? notes.find((n) => n.id === activeAnnotation.noteId) : undefined;
+  const switchReadMode = (mode: 'paged' | 'scroll') => {
+    if (mode === readMode) return;
+    if (pageTurnTimer.current) window.clearTimeout(pageTurnTimer.current);
+    setPageTurn(null);
+    turning.current = false;
+    setReadMode(mode);
+    if (mode === 'paged') {
+      requestAnimationFrame(() => scrollRef.current?.scrollTo({ top: 0, left: 0, behavior: 'auto' }));
+    }
+  };
+
   const percent = book ? clamp(currentPage / book.pageCount, 0, 1) : 0;
 
   useEffect(() => {
@@ -239,11 +259,28 @@ export function ReaderPage() {
     setScale(effectiveScale);
   }, [effectiveScale]);
 
-  const scrollToPage = useCallback((page: number, _behavior: ScrollBehavior = 'auto') => {
+  useEffect(() => {
+    try {
+      localStorage.setItem('pagecat.readMode', readMode);
+    } catch {
+      // ignore storage errors
+    }
+  }, [readMode]);
+
+  const scrollToPage = useCallback((page: number, behavior: ScrollBehavior = 'auto') => {
     setCurrentPage(page);
     setPageDraft(String(page));
-    scrollRef.current?.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-  }, []);
+    const scroll = scrollRef.current;
+    if (!scroll) return;
+    if (readMode === 'scroll') {
+      const block = scroll.querySelector<HTMLElement>(`.page-block[data-page="${page}"]`);
+      if (!block) return;
+      const top = block.getBoundingClientRect().top - scroll.getBoundingClientRect().top + scroll.scrollTop - 20;
+      scroll.scrollTo({ top: Math.max(0, top), behavior });
+      return;
+    }
+    scroll.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [readMode]);
 
   const showPageTurn = async (direction: 'next' | 'prev', targetPage?: number) => {
     const scroll = scrollRef.current;
@@ -331,8 +368,55 @@ export function ReaderPage() {
   };
 
   const turnToPage = (direction: 'next' | 'prev', page: number) => {
+    if (readMode === 'scroll') {
+      scrollToPage(page, 'smooth');
+      return;
+    }
     void showPageTurn(direction, page).finally(() => scrollToPage(page, 'auto'));
   };
+
+  useEffect(() => {
+    if (readMode !== 'scroll') return;
+    const el = scrollRef.current;
+    if (!el) return;
+    let raf = 0;
+    const onScroll = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        const top = el.getBoundingClientRect().top;
+        const blocks = el.querySelectorAll<HTMLElement>('.page-block');
+        let page = 1;
+        for (const block of blocks) {
+          const rect = block.getBoundingClientRect();
+          if (rect.top - top <= 180) page = Number(block.dataset.page);
+          else break;
+        }
+        setCurrentPage(page);
+        setPageDraft(String(page));
+      });
+    };
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      el.removeEventListener('scroll', onScroll);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [readMode, doc, baseReady]);
+
+  useEffect(() => {
+    if (readMode !== 'scroll') return;
+    const page = currentPage;
+    const timer = window.setTimeout(() => {
+      const scroll = scrollRef.current;
+      if (!scroll) return;
+      const block = scroll.querySelector<HTMLElement>(`.page-block[data-page="${page}"]`);
+      if (!block) return;
+      const top = block.getBoundingClientRect().top - scroll.getBoundingClientRect().top + scroll.scrollTop - 20;
+      scroll.scrollTo({ top: Math.max(0, top), behavior: 'auto' });
+    }, 90);
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [readMode, baseReady, book?.id]);
 
   useEffect(() => {
     if (!book || !doc) return;
@@ -481,7 +565,8 @@ export function ReaderPage() {
   };
 
   const jumpTo = (page: number, annotationId?: string) => {
-    if (page !== currentPage) turnToPage(page > currentPage ? 'next' : 'prev', page);
+    if (readMode === 'scroll') scrollToPage(page, 'smooth');
+    else if (page !== currentPage) turnToPage(page > currentPage ? 'next' : 'prev', page);
     else scrollToPage(page);
     if (annotationId) {
       setFlashId(annotationId);
@@ -493,7 +578,8 @@ export function ReaderPage() {
   };
 
   const jumpToPanel = (page: number) => {
-    if (page !== currentPage) turnToPage(page > currentPage ? 'next' : 'prev', page);
+    if (readMode === 'scroll') scrollToPage(page, 'smooth');
+    else if (page !== currentPage) turnToPage(page > currentPage ? 'next' : 'prev', page);
     else scrollToPage(page);
   };
 
@@ -533,6 +619,18 @@ export function ReaderPage() {
   };
 
   const jumpToSection = (page: number, title?: string) => {
+    if (readMode === 'scroll') {
+      if (page !== currentPage) {
+        scrollToPage(page, 'smooth');
+        if (title) {
+          window.setTimeout(() => scrollToHeading(title, 'auto'), 700);
+          window.setTimeout(() => scrollToHeading(title, 'auto'), 1300);
+        }
+      } else if (title) {
+        scrollToHeading(title, 'smooth');
+      }
+      return;
+    }
     if (page !== currentPage) {
       turnToPage(page > currentPage ? 'next' : 'prev', page);
       if (title) {
@@ -738,6 +836,26 @@ export function ReaderPage() {
         </div>
 
         <div className="rt-right">
+          <div className="rt-mode" role="group" aria-label="阅读模式">
+            <button
+              className={readMode === 'paged' ? 'active' : ''}
+              onClick={() => switchReadMode('paged')}
+              title="拟物翻页"
+              aria-label="拟物翻页"
+              aria-pressed={readMode === 'paged'}
+            >
+              <BookOpen size={15} />
+            </button>
+            <button
+              className={readMode === 'scroll' ? 'active' : ''}
+              onClick={() => switchReadMode('scroll')}
+              title="滚动阅读"
+              aria-label="滚动阅读"
+              aria-pressed={readMode === 'scroll'}
+            >
+              <AlignJustify size={15} />
+            </button>
+          </div>
           <div className="zoom-control" title="缩放仅影响 PDF；100% 为整页适应">
             <button onClick={() => setZoom((z) => clamp(Math.round((z - 0.1) * 10) / 10, 0.5, 2.2))} aria-label="缩小">
               <ZoomOut size={15} />
@@ -781,22 +899,41 @@ export function ReaderPage() {
 
       <div className="reader-body">
         <main className="reader-scroll" ref={scrollRef}>
-          <div className="pages single-page">
+          <div className={`pages ${readMode === 'paged' ? 'single-page' : 'scroll-pages'}`}>
             {baseReady ? (
-              <PageView
-                key={currentPage}
-                doc={doc!}
-                pageNumber={currentPage}
-                scale={scale}
-                baseWidth={base.w}
-                baseHeight={base.h}
-                annotations={annotations}
-                activeId={activeAnnotationId ?? undefined}
-                flashId={flashId}
-                scrollRoot={scrollRef}
-                onRendered={(page) => renderedPages.current.add(page)}
-                onRectsResolved={(id, rects) => void annStore.setRects(id, rects)}
-              />
+              readMode === 'paged' ? (
+                <PageView
+                  key={currentPage}
+                  doc={doc!}
+                  pageNumber={currentPage}
+                  scale={scale}
+                  baseWidth={base.w}
+                  baseHeight={base.h}
+                  annotations={annotations}
+                  activeId={activeAnnotationId ?? undefined}
+                  flashId={flashId}
+                  scrollRoot={scrollRef}
+                  onRendered={(page) => renderedPages.current.add(page)}
+                  onRectsResolved={(id, rects) => void annStore.setRects(id, rects)}
+                />
+              ) : (
+                Array.from({ length: totalPages }, (_, index) => (
+                  <PageView
+                    key={index + 1}
+                    doc={doc!}
+                    pageNumber={index + 1}
+                    scale={scale}
+                    baseWidth={base.w}
+                    baseHeight={base.h}
+                    annotations={annotations}
+                    activeId={activeAnnotationId ?? undefined}
+                    flashId={flashId}
+                    scrollRoot={scrollRef}
+                    onRendered={(page) => renderedPages.current.add(page)}
+                    onRectsResolved={(id, rects) => void annStore.setRects(id, rects)}
+                  />
+                ))
+              )
             ) : (
               <div className="reader-page-skeleton">
                 <span />
