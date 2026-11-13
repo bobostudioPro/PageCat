@@ -41,7 +41,7 @@ export function ShelfCat({ dragActive = false, x = 82, dragging = false, movable
   const decorBase = `${import.meta.env.BASE_URL}decor/`;
   const catImages: Record<CatMood, string> = {
     sleeping: 'cat-sleeping.webp',
-    awake: 'cat-ai.webp',
+    awake: 'cat-awake.webp',
     happy: 'cat-happy.webp',
     playing: 'cat-playing.webp',
     eating: 'cat-eating.webp',
