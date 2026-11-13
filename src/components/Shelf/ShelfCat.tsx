@@ -39,7 +39,15 @@ export function ShelfCat({ dragActive = false, x = 82, dragging = false, movable
   const greeted = useRef(false);
   const moodRef = useRef<CatMood>('sleeping');
   const decorBase = `${import.meta.env.BASE_URL}decor/`;
-  const catImage = 'cat-ai.webp';
+  const catImages: Record<CatMood, string> = {
+    sleeping: 'cat-sleeping.webp',
+    awake: 'cat-ai.webp',
+    happy: 'cat-happy.webp',
+    playing: 'cat-playing.webp',
+    eating: 'cat-eating.webp',
+    stretching: 'cat-stretching.webp',
+  };
+  const catImage = catImages[mood];
 
   const clear = (ref: React.MutableRefObject<number | null>) => {
     if (ref.current) {
@@ -171,6 +179,14 @@ export function ShelfCat({ dragActive = false, x = 82, dragging = false, movable
     return () => window.clearInterval(idle);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bubble, dragActive]);
+
+  useEffect(() => {
+    for (const name of Object.values(catImages)) {
+      const img = new Image();
+      img.src = `${import.meta.env.BASE_URL}decor/${name}`;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     return () => {
