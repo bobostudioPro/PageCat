@@ -19,7 +19,7 @@ export function ShelfDecor({ x = 80, dragging = false, movable = true, onMoveSta
         <span className="deco-book b2" />
         <span className="deco-book b3" />
         <span className="deco-plant">
-          <img src={`${import.meta.env.BASE_URL}decor/plant.webp`} alt="" draggable={false} />
+          <img src={`${import.meta.env.BASE_URL}decor/plant-ai.webp`} alt="" draggable={false} />
         </span>
       </div>
 

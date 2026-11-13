@@ -39,12 +39,7 @@ export function ShelfCat({ dragActive = false, x = 82, dragging = false, movable
   const greeted = useRef(false);
   const moodRef = useRef<CatMood>('sleeping');
   const decorBase = `${import.meta.env.BASE_URL}decor/`;
-  const catImage =
-    mood === 'happy'
-      ? 'cat-happy.webp'
-      : mood === 'sleeping' || mood === 'eating' || blinking
-        ? 'cat-sleepy.webp'
-        : 'cat-awake.webp';
+  const catImage = 'cat-ai.webp';
 
   const clear = (ref: React.MutableRefObject<number | null>) => {
     if (ref.current) {
@@ -176,13 +171,6 @@ export function ShelfCat({ dragActive = false, x = 82, dragging = false, movable
     return () => window.clearInterval(idle);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bubble, dragActive]);
-
-  useEffect(() => {
-    for (const name of ['cat-sleepy', 'cat-happy']) {
-      const img = new Image();
-      img.src = `${import.meta.env.BASE_URL}decor/${name}.webp`;
-    }
-  }, []);
 
   useEffect(() => {
     return () => {
