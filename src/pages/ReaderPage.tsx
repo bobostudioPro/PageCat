@@ -115,6 +115,7 @@ export function ReaderPage() {
   const renderedPages = useRef(new Set<number>());
   const pageTurnTarget = useRef<number | undefined>(undefined);
   const turning = useRef(false);
+  const pagePulseTimer = useRef<number | undefined>(undefined);
 
   const theme = settings.readerTheme;
   const activeAnnotation = activeAnnotationId ? annotations.find((a) => a.id === activeAnnotationId) ?? null : null;
@@ -493,6 +494,24 @@ export function ReaderPage() {
     else scrollToPage(page);
   };
 
+  const pulseCurrentPage = () => {
+    const pageEl = scrollRef.current?.querySelector<HTMLElement>('.pdf-page');
+    if (!pageEl) return;
+    pageEl.classList.remove('page-lift');
+    void pageEl.offsetWidth;
+    pageEl.classList.add('page-lift');
+    if (pagePulseTimer.current) window.clearTimeout(pagePulseTimer.current);
+    pagePulseTimer.current = window.setTimeout(() => pageEl.classList.remove('page-lift'), 460);
+  };
+
+  const jumpToSection = (page: number) => {
+    if (page !== currentPage) {
+      turnToPage(page > currentPage ? 'next' : 'prev', page);
+      return;
+    }
+    pulseCurrentPage();
+  };
+
   const toggleTheme = () => {
     const order = ['paper', 'sepia', 'night'] as const;
     const next = order[(order.indexOf(theme) + 1) % order.length];
@@ -773,6 +792,7 @@ export function ReaderPage() {
             onAskNote={(note) => askAboutSelection(note.text, 'note', note.page, note.id, note.quote)}
             onJump={jumpTo}
             onJumpPanel={jumpToPanel}
+            onJumpSection={jumpToSection}
             onFavorite={(annotation: Annotation, value: boolean) => void annStore.update(annotation.id, { favorite: value })}
             onRemoveAnnotation={(annotation) => void annStore.remove(annotation.id)}
             onAddNote={async (text) => {

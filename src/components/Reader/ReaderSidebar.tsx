@@ -25,6 +25,7 @@ type Props = {
   aiExternal?: ExternalReference | null;
   onJump: (page: number, annotationId?: string) => void;
   onJumpPanel: (page: number) => void;
+  onJumpSection: (page: number) => void;
   onFavorite: (annotation: Annotation, value: boolean) => void;
   onRemoveAnnotation: (annotation: Annotation) => void;
   onAddNote: (text: string) => Promise<void>;
@@ -68,7 +69,7 @@ export function ReaderSidebar(props: Props) {
             currentPage={props.currentPage}
             pageCount={props.pageCount}
             percent={props.percent}
-            onJump={props.onJump}
+            onJump={props.onJumpSection}
           />
         )}
         {tab === 'highlights' && (
