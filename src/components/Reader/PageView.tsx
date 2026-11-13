@@ -212,10 +212,17 @@ export function PageView({
             })}
         </div>
         {status === 'loading' && (
-          <div className="page-loading">
-            <span />
-            <span />
-            <span />
+          <div className="page-loading" aria-hidden="true">
+            <div className="page-skeleton">
+              <span className="ps-eyebrow" />
+              <span className="ps-title" />
+              <span className="ps-block ps-w96" />
+              <span className="ps-block ps-w88" />
+              <span className="ps-figure" />
+              <span className="ps-block ps-w92" />
+              <span className="ps-block ps-w84" />
+              <span className="ps-block ps-w70" />
+            </div>
           </div>
         )}
         {status === 'error' && <div className="page-error">这一页没有渲染出来</div>}

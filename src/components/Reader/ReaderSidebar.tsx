@@ -18,6 +18,7 @@ type Props = {
   annotations: Annotation[];
   notes: Note[];
   toc: OutlineItem[];
+  tocLoading?: boolean;
   currentPage: number;
   pageCount: number;
   percent: number;
@@ -66,6 +67,7 @@ export function ReaderSidebar(props: Props) {
         {tab === 'toc' && (
           <OutlinePanel
             toc={props.toc}
+            tocLoading={props.tocLoading}
             currentPage={props.currentPage}
             pageCount={props.pageCount}
             percent={props.percent}

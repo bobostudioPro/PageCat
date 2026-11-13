@@ -3,13 +3,14 @@ import type { OutlineItem } from '../../types';
 
 type Props = {
   toc: OutlineItem[];
+  tocLoading?: boolean;
   currentPage: number;
   pageCount: number;
   percent: number;
   onJump: (page: number, title?: string) => void;
 };
 
-export function OutlinePanel({ toc, currentPage, pageCount, percent, onJump }: Props) {
+export function OutlinePanel({ toc, tocLoading = false, currentPage, pageCount, percent, onJump }: Props) {
   return (
     <div className="outline-panel">
       <div className="reader-progress-card">
@@ -26,7 +27,17 @@ export function OutlinePanel({ toc, currentPage, pageCount, percent, onJump }: P
         </div>
       </div>
 
-      {toc.length > 0 ? (
+      {tocLoading ? (
+        <div className="outline-skeleton" aria-label="正在加载目录">
+          <div className="outline-skeleton-label" />
+          {Array.from({ length: 6 }, (_, i) => (
+            <div key={i} className={`outline-skeleton-row lvl-${i % 3}`}>
+              <span />
+              <span />
+            </div>
+          ))}
+        </div>
+      ) : toc.length > 0 ? (
         <div className="outline-list">
           <div className="panel-section-label">
             <BookMarked size={12} /> 目录

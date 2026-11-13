@@ -100,6 +100,7 @@ export function ReaderPage() {
   });
   const [pageDraft, setPageDraft] = useState(String(book?.lastPage ?? 1));
   const [toc, setToc] = useState<OutlineItem[]>(book?.toc ?? []);
+  const [tocLoading, setTocLoading] = useState(() => !book?.toc?.length);
   const [sidebar, setSidebar] = useState<SidebarState>({ open: typeof window !== 'undefined' && window.innerWidth > 1024, tab: 'toc' });
   const [selection, setSelection] = useState<TextSelection | null>(null);
   const [activeAnnotationId, setActiveAnnotationId] = useState<string | null>(null);
@@ -214,14 +215,19 @@ export function ReaderPage() {
     let cancelled = false;
     if (book.toc?.length) {
       setToc(book.toc);
+      setTocLoading(false);
       return;
     }
+    setTocLoading(true);
     getOutline(doc)
       .then((items) => {
         if (!cancelled) setToc(items);
       })
       .catch(() => {
         if (!cancelled) setToc([]);
+      })
+      .finally(() => {
+        if (!cancelled) setTocLoading(false);
       });
     return () => {
       cancelled = true;
@@ -986,6 +992,7 @@ export function ReaderPage() {
             annotations={annotations}
             notes={notes}
             toc={toc}
+            tocLoading={tocLoading}
             currentPage={currentPage}
             pageCount={totalPages}
             percent={percent}
