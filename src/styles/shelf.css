@@ -2752,3 +2752,187 @@
   pointer-events: none;
   transform: translateY(4px) scale(0.9);
 }
+
+/* ---------- plant care ---------- */
+.plant-care {
+  position: absolute;
+  right: calc(100% - 12px);
+  bottom: 36px;
+  z-index: 8;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(4px);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.shelf-decor:hover .plant-care,
+.shelf-decor:focus-within .plant-care,
+.shelf-decor.care-water .plant-care,
+.shelf-decor.care-fertilize .plant-care,
+.shelf-decor.care-pest .plant-care {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(0);
+}
+
+.plant-care button {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid rgba(238, 211, 166, 0.26);
+  border-radius: 50%;
+  color: #efdbb8;
+  background: rgba(42, 26, 15, 0.82);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.38);
+  cursor: pointer;
+  transition: background 0.16s ease, color 0.16s ease, transform 0.16s ease;
+}
+
+.plant-care button:hover {
+  color: #2a1a0d;
+  background: #d8b476;
+  transform: scale(1.08);
+}
+
+.plant-bubble {
+  position: absolute;
+  right: 14px;
+  bottom: 108px;
+  z-index: 9;
+  width: max-content;
+  max-width: 176px;
+  padding: 7px 10px;
+  border-radius: 10px 10px 3px 10px;
+  color: #3b2816;
+  background: #f4e6c9;
+  box-shadow: 0 8px 18px -10px rgba(0, 0, 0, 0.65);
+  font-size: 10px;
+  line-height: 1.4;
+  animation: plant-bubble-in 0.18s ease both;
+}
+
+.plant-bubble-tail {
+  position: absolute;
+  right: 8px;
+  bottom: -5px;
+  width: 9px;
+  height: 9px;
+  background: inherit;
+  transform: rotate(45deg);
+  border-radius: 0 0 2px 0;
+}
+
+@keyframes plant-bubble-in {
+  from { opacity: 0; transform: translateY(4px); }
+}
+
+.plant-vfx {
+  position: absolute;
+  inset: -12px -8px -4px;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.plant-vfx i {
+  position: absolute;
+  display: block;
+  opacity: 0;
+}
+
+.plant-vfx.water i {
+  top: 8%;
+  left: calc(18% + var(--i) * 11%);
+  width: 4px;
+  height: 7px;
+  border-radius: 50% 50% 55% 55%;
+  background: #8cc3d5;
+  box-shadow: 0 0 4px rgba(140, 195, 213, 0.6);
+  animation: plant-drop 0.85s ease-in calc(var(--i) * 0.07s) forwards;
+}
+
+.plant-vfx.fertilize i {
+  top: calc(28% + var(--i) * 5%);
+  left: calc(18% + var(--i) * 12%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #e5c47d;
+  box-shadow: 0 0 7px rgba(229, 196, 125, 0.8);
+  animation: plant-spark 0.9s ease-out calc(var(--i) * 0.06s) forwards;
+}
+
+.plant-vfx.pest i {
+  bottom: 24%;
+  left: calc(20% + var(--i) * 12%);
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(225, 237, 230, 0.72);
+  filter: blur(1px);
+  animation: plant-mist 0.9s ease-out calc(var(--i) * 0.05s) forwards;
+}
+
+.care-water .deco-plant img { animation: plant-drink 0.7s ease-in-out 2; }
+.care-fertilize .deco-plant img { animation: plant-grow 0.8s ease-out; }
+.care-pest .deco-plant img { animation: plant-shake 0.16s linear 4; }
+
+@keyframes plant-drop {
+  0% { opacity: 0; transform: translateY(-6px) scale(0.7); }
+  30% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(48px) scale(0.9); }
+}
+
+@keyframes plant-spark {
+  0% { opacity: 0; transform: translateY(8px) scale(0.4); }
+  35% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-18px) scale(1.15); }
+}
+
+@keyframes plant-mist {
+  0% { opacity: 0; transform: translate(10px, 6px) scale(0.4); }
+  30% { opacity: 0.9; }
+  100% { opacity: 0; transform: translate(-22px, -14px) scale(1.8); }
+}
+
+@keyframes plant-drink {
+  0%, 100% { transform: rotate(0) scale(1); filter: brightness(1); }
+  50% { transform: rotate(-1.5deg) scale(1.015); filter: brightness(1.08); }
+}
+
+@keyframes plant-grow {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.045) translateY(-2px); }
+  100% { transform: scale(1); }
+}
+
+@keyframes plant-shake {
+  0%, 100% { transform: translateX(0) rotate(0); }
+  25% { transform: translateX(-2px) rotate(-1deg); }
+  75% { transform: translateX(2px) rotate(1deg); }
+}
+
+.deco-plant img {
+  filter: drop-shadow(0 5px 5px rgba(0, 0, 0, 0.3));
+}
+
+@media (hover: none) {
+  .plant-care {
+    opacity: 1;
+    pointer-events: auto;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plant-vfx, .care-water .deco-plant img, .care-fertilize .deco-plant img, .care-pest .deco-plant img {
+    animation: none;
+  }
+}
+
+.shelf-decor { pointer-events: auto; }
+.shelf-decor .deco-stack { pointer-events: none; }
