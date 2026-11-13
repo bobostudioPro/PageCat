@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, BookOpen, CloudUpload, Search, Settings2, X } from 'lucide-react';
+import { ArrowRight, BookOpen, Clock3, CloudUpload, Search, Settings2, X } from 'lucide-react';
 import { useLibrary } from '../state/library';
 import { Logo } from '../components/ui/Logo';
 import { Shelf } from '../components/Shelf/Shelf';
@@ -13,8 +13,16 @@ import { Modal } from '../components/ui/Modal';
 import type { Book } from '../types';
 import { rerange } from '../lib/utils';
 
-function greeting() {
-  const h = new Date().getHours();
+const BEIJING = 'Asia/Shanghai';
+
+function beijingHour(now: Date) {
+  return Number(
+    new Intl.DateTimeFormat('en-GB', { timeZone: BEIJING, hour: '2-digit', hourCycle: 'h23' }).format(now),
+  );
+}
+
+function greeting(now: Date) {
+  const h = beijingHour(now);
   if (h < 5) return '夜深了';
   if (h < 11) return '早上好';
   if (h < 14) return '午安';
@@ -22,12 +30,37 @@ function greeting() {
   return '晚上好';
 }
 
-function today() {
-  return new Intl.DateTimeFormat('zh-CN', { month: 'long', day: 'numeric', weekday: 'long' }).format(new Date());
+function today(now: Date) {
+  return new Intl.DateTimeFormat('zh-CN', {
+    timeZone: BEIJING,
+    month: 'long',
+    day: 'numeric',
+    weekday: 'long',
+  }).format(now);
+}
+
+function beijingTime(now: Date) {
+  return new Intl.DateTimeFormat('zh-CN', {
+    timeZone: BEIJING,
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23',
+  }).format(now);
+}
+
+function useBeijingNow() {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(new Date()), 1000);
+    return () => window.clearInterval(id);
+  }, []);
+  return now;
 }
 
 export function LibraryPage() {
   const navigate = useNavigate();
+  const now = useBeijingNow();
   const { books, status, error, initialize, removeBook, reorderBooks } = useLibrary();
   const [query, setQuery] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
@@ -201,9 +234,16 @@ export function LibraryPage() {
 
         <section className="hero">
           <div className="hero-copy">
-            <p className="hero-kicker">{today()}</p>
+            <p className="hero-kicker">
+              <span>{today(now)}</span>
+              <span className="kicker-line" aria-hidden="true" />
+              <time className="hero-time" dateTime={now.toISOString()} aria-label={`当前北京时间 ${beijingTime(now)}`}>
+                <Clock3 size={10} aria-hidden="true" />
+                北京时间 {beijingTime(now)}
+              </time>
+            </p>
             <h1>
-              {greeting()}，<em>读书人</em>。
+              {greeting(now)}，<em>读书人</em>。
             </h1>
             <div className="hero-stats">
               <div>

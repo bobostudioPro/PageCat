@@ -2981,3 +2981,31 @@
   left: -16px;
   z-index: 2;
 }
+
+.hero-kicker {
+  flex-wrap: wrap;
+  row-gap: 6px;
+}
+
+.hero-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #d8b378;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.12em;
+}
+
+.hero-time svg {
+  opacity: 0.72;
+}
+
+@media (max-width: 720px) {
+  .hero-kicker .kicker-line {
+    display: none;
+  }
+
+  .hero-time {
+    font-size: 7.5px;
+  }
+}
