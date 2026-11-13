@@ -788,17 +788,17 @@
 .spine-author {
   position: absolute;
   bottom: 27px;
-  left: 0;
-  right: 0;
-  writing-mode: vertical-rl;
-  text-orientation: mixed;
+  left: 4px;
+  right: 4px;
   font-family: var(--font-mono);
-  font-size: 7px;
-  letter-spacing: 0.08em;
-  color: rgba(243, 223, 190, 0.56);
+  font-size: 6.8px;
+  line-height: 1;
+  letter-spacing: 0.015em;
+  color: rgba(243, 223, 190, 0.64);
   text-align: center;
-  max-height: 38px;
+  white-space: nowrap;
   overflow: hidden;
+  text-overflow: ellipsis;
   pointer-events: none;
 }
 
