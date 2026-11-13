@@ -229,6 +229,7 @@ export function ShelfCat({ dragActive = false, x = 82, dragging = false, movable
         aria-label="摸摸书架上的猫；双击让它伸懒腰"
         title="摸摸猫 · 双击伸懒腰"
       >
+        <img className="cat-cushion" src={`${decorBase}cat-cushion.webp`} alt="" draggable={false} />
         <img className="cat-figure" src={`${decorBase}${catImage}`} alt="" draggable={false} />
       </button>
 

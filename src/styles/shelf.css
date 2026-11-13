@@ -2936,3 +2936,43 @@
 
 .shelf-decor { pointer-events: auto; }
 .shelf-decor .deco-stack { pointer-events: none; }
+
+/* real velvet cushion asset behind every cat pose */
+.cat-pet::before,
+.cat-pet::after {
+  display: none;
+  content: none;
+}
+
+.cat-cushion {
+  position: absolute;
+  left: -3%;
+  right: -3%;
+  bottom: -1%;
+  z-index: -1;
+  width: 106%;
+  height: 62%;
+  object-fit: contain;
+  object-position: center bottom;
+  filter: drop-shadow(0 8px 9px rgba(0, 0, 0, 0.5));
+  pointer-events: none;
+}
+
+.cat-cushion {
+  left: -10%;
+  right: -10%;
+  bottom: -5%;
+  width: 120%;
+  height: 76%;
+  filter: brightness(1.12) saturate(1.06) drop-shadow(0 9px 10px rgba(0, 0, 0, 0.55));
+}
+
+.cat-figure { transform: translateY(-5px); }
+.cat-cushion {
+  height: 82%;
+  bottom: -6%;
+  width: 124%;
+  left: -12%;
+  right: -12%;
+  filter: brightness(1.08) saturate(1.05) drop-shadow(0 9px 11px rgba(0, 0, 0, 0.5));
+}
