@@ -13,6 +13,7 @@ export function PageTurnEffect({ turn, theme }: { turn: PageTurnState | null; th
   return createPortal(
     <div
       className={`page-turn ${turn.direction} theme-${theme}`}
+      data-turn-id={turn.id}
       style={{ left: turn.rect.left, top: turn.rect.top, width: turn.rect.width, height: turn.rect.height }}
       aria-hidden="true"
     >

@@ -346,7 +346,7 @@ export function ReaderPage() {
     pageTurnTarget.current = targetPage;
     const started = performance.now();
     setPageTurn({
-      id: Date.now(),
+      id: serial,
       direction,
       image,
       nextImage,
@@ -1085,7 +1085,7 @@ export function ReaderPage() {
         <i><span style={{ width: `${percent * 100}%` }} /></i>
       </div>
 
-      <PageTurnEffect turn={pageTurn} theme={theme} />
+      <PageTurnEffect key={pageTurn?.id ?? 0} turn={pageTurn} theme={theme} />
       <TtsPlayer />
       <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </div>
