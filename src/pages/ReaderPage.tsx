@@ -85,7 +85,7 @@ export function ReaderPage() {
   const [base, setBase] = useState({ w: 612, h: 792 });
   const [baseReady, setBaseReady] = useState(false);
   const [scale, setScale] = useState(1);
-  const [zoom, setZoom] = useState(() => (typeof window !== 'undefined' && window.innerWidth >= 1200 ? 1.2 : 1));
+  const [zoom, setZoom] = useState(1);
   const [viewportWidth, setViewportWidth] = useState(0);
   const [viewportHeight, setViewportHeight] = useState(0);
   const [currentPage, setCurrentPage] = useState(book?.lastPage ?? 1);
@@ -115,7 +115,6 @@ export function ReaderPage() {
   const renderedPages = useRef(new Set<number>());
   const pageTurnTarget = useRef<number | undefined>(undefined);
   const turning = useRef(false);
-  const pagePulseTimer = useRef<number | undefined>(undefined);
 
   const theme = settings.readerTheme;
   const activeAnnotation = activeAnnotationId ? annotations.find((a) => a.id === activeAnnotationId) ?? null : null;
@@ -274,9 +273,13 @@ export function ReaderPage() {
     let image = capturePageSnapshot(pageEl.querySelector<HTMLCanvasElement>('canvas'), theme);
     let nextImage: string | undefined;
 
-    if (targetPage && targetPage !== currentPage) {
-      const existing = scroll.querySelector<HTMLCanvasElement>(`.page-block[data-page="${targetPage}"] .pdf-page canvas`);
-      nextImage = capturePageSnapshot(existing, theme);
+    if (targetPage) {
+      if (targetPage === currentPage) {
+        nextImage = image;
+      } else {
+        const existing = scroll.querySelector<HTMLCanvasElement>(`.page-block[data-page="${targetPage}"] .pdf-page canvas`);
+        nextImage = capturePageSnapshot(existing, theme);
+      }
       if (!nextImage && doc) {
         try {
           const target = await doc.getPage(targetPage);
@@ -494,22 +497,14 @@ export function ReaderPage() {
     else scrollToPage(page);
   };
 
-  const pulseCurrentPage = () => {
-    const pageEl = scrollRef.current?.querySelector<HTMLElement>('.pdf-page');
-    if (!pageEl) return;
-    pageEl.classList.remove('page-lift');
-    void pageEl.offsetWidth;
-    pageEl.classList.add('page-lift');
-    if (pagePulseTimer.current) window.clearTimeout(pagePulseTimer.current);
-    pagePulseTimer.current = window.setTimeout(() => pageEl.classList.remove('page-lift'), 460);
-  };
-
   const jumpToSection = (page: number) => {
     if (page !== currentPage) {
       turnToPage(page > currentPage ? 'next' : 'prev', page);
       return;
     }
-    pulseCurrentPage();
+    // Same page: still run the book-style turn so the section click is never silent.
+    turning.current = true;
+    void showPageTurn('next', page);
   };
 
   const toggleTheme = () => {

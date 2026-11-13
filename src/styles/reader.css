@@ -314,21 +314,6 @@ body,
   perspective: 1800px;
 }
 
-.pdf-page.page-lift {
-  animation: page-lift 0.42s cubic-bezier(0.3, 0.04, 0.25, 1);
-}
-
-@keyframes page-lift {
-  0% { transform: translateY(0); }
-  45% { transform: translateY(-7px); }
-  100% { transform: translateY(0); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .pdf-page.page-lift {
-    animation: none;
-  }
-}
 
 .pdf-page {
   position: relative;
