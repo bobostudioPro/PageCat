@@ -1,0 +1,301 @@
+{
+  "version": 2,
+  "books": [
+    {
+      "id": "sample-gatsby",
+      "title": "The Great Gatsby",
+      "author": "F. Scott Fitzgerald",
+      "year": "1925",
+      "genre": "小说",
+      "description": "纽约长岛的夏天，绿灯、派对与旧梦。用第一人称的克制口吻，写尽美国梦的华丽与虚空。此处收录第一章。",
+      "fileName": "The Great Gatsby.pdf",
+      "size": 249568,
+      "pageCount": 20,
+      "cover": "./covers/sample-gatsby.jpg",
+      "accent": "#7e2f2b",
+      "spineColor": "#7e2f2b",
+      "samplePdf": "./books/sample-gatsby.pdf",
+      "isSample": true,
+      "seedProgress": 0.24,
+      "seedAnnotations": [
+        {
+          "page": 2,
+          "quote": "In my younger and more vulnerable years my father gave me some advice that I’ve been turning over in my mind ever since.",
+          "color": "amber",
+          "style": "highlight",
+          "favorite": true,
+          "note": "父亲的忠告像一枚小小的钉子，把整本书钉在了“评判”与“希望”之间。"
+        },
+        {
+          "page": 2,
+          "quote": "Reserving judgements is a matter of infinite hope.",
+          "color": "sage",
+          "style": "highlight",
+          "favorite": false
+        }
+      ],
+      "toc": [
+        {
+          "title": "Chapter One",
+          "page": 2,
+          "level": 0
+        }
+      ]
+    },
+    {
+      "id": "sample-pride",
+      "title": "Pride and Prejudice",
+      "author": "Jane Austen",
+      "year": "1813",
+      "genre": "小说",
+      "description": "班纳特家五个女儿，与一场关于婚姻、阶层与自尊的漫长舞蹈。此处收录第一至第四章。",
+      "fileName": "Pride and Prejudice.pdf",
+      "size": 242676,
+      "pageCount": 17,
+      "cover": "./covers/sample-pride.jpg",
+      "accent": "#335548",
+      "spineColor": "#335548",
+      "samplePdf": "./books/sample-pride.pdf",
+      "isSample": true,
+      "seedProgress": 0.08,
+      "seedAnnotations": [
+        {
+          "page": 2,
+          "quote": "It is a truth universally acknowledged, that a single man in possession of a good fortune must be in want of a wife.",
+          "color": "rose",
+          "style": "highlight",
+          "favorite": true,
+          "note": "一句被引用到几乎失去锋芒的开场，放在整本书里却是一次漂亮的讽刺。"
+        }
+      ],
+      "toc": [
+        {
+          "title": "Chapter One",
+          "page": 2,
+          "level": 0
+        },
+        {
+          "title": "Chapter Two",
+          "page": 5,
+          "level": 0
+        },
+        {
+          "title": "Chapter Three",
+          "page": 8,
+          "level": 0
+        },
+        {
+          "title": "Chapter Four",
+          "page": 13,
+          "level": 0
+        }
+      ]
+    },
+    {
+      "id": "sample-artofwar",
+      "title": "The Art of War",
+      "author": "Sun Tzu · Lionel Giles",
+      "year": "5th c. BC",
+      "genre": "兵法",
+      "description": "十三篇兵法，谈谋略、地形与人心。这一版是 Lionel Giles 1910 年英译本，此处收录前六篇。",
+      "fileName": "The Art of War.pdf",
+      "size": 270862,
+      "pageCount": 19,
+      "cover": "./covers/sample-artofwar.jpg",
+      "accent": "#4a4034",
+      "spineColor": "#4a4034",
+      "samplePdf": "./books/sample-artofwar.pdf",
+      "isSample": true,
+      "seedProgress": 0,
+      "seedAnnotations": [
+        {
+          "page": 3,
+          "quote": "All warfare is based on deception.",
+          "color": "sky",
+          "style": "highlight",
+          "favorite": false
+        }
+      ],
+      "toc": [
+        {
+          "title": "Laying Plans",
+          "page": 2,
+          "level": 0
+        },
+        {
+          "title": "Waging War",
+          "page": 5,
+          "level": 0
+        },
+        {
+          "title": "Attack by Stratagem",
+          "page": 8,
+          "level": 0
+        },
+        {
+          "title": "Tactical Dispositions",
+          "page": 10,
+          "level": 0
+        },
+        {
+          "title": "Energy",
+          "page": 12,
+          "level": 0
+        },
+        {
+          "title": "Weak Points and Strong",
+          "page": 15,
+          "level": 0
+        }
+      ]
+    },
+    {
+      "id": "sample-meditations",
+      "title": "Meditations",
+      "author": "Marcus Aurelius",
+      "year": "c. 180 AD",
+      "genre": "哲思",
+      "description": "罗马皇帝写给自己看的札记，关于自持、无常与如何度过今天。此处收录第二、三卷。",
+      "fileName": "Meditations.pdf",
+      "size": 246553,
+      "pageCount": 17,
+      "cover": "./covers/sample-meditations.jpg",
+      "accent": "#735b37",
+      "spineColor": "#735b37",
+      "samplePdf": "./books/sample-meditations.pdf",
+      "isSample": true,
+      "seedProgress": 0,
+      "seedAnnotations": [
+        {
+          "page": 3,
+          "quote": "Every man's happiness depends from himself, but behold thy life is almost at an end",
+          "color": "amber",
+          "style": "highlight",
+          "favorite": true
+        }
+      ],
+      "toc": [
+        {
+          "title": "The Second Book",
+          "page": 2,
+          "level": 0
+        },
+        {
+          "title": "The Third Book",
+          "page": 8,
+          "level": 0
+        }
+      ]
+    },
+    {
+      "id": "sample-alice",
+      "title": "Alice’s Adventures in Wonderland",
+      "author": "Lewis Carroll",
+      "year": "1865",
+      "genre": "童话",
+      "description": "掉进兔子洞之后，逻辑与荒诞一起失效。此处收录第一、二章。",
+      "fileName": "Alice’s Adventures in Wonderland.pdf",
+      "size": 262562,
+      "pageCount": 14,
+      "cover": "./covers/sample-alice.jpg",
+      "accent": "#5f4b76",
+      "spineColor": "#5f4b76",
+      "samplePdf": "./books/sample-alice.pdf",
+      "isSample": true,
+      "seedProgress": 0.41,
+      "seedAnnotations": [
+        {
+          "page": 2,
+          "quote": "“and what is the use of a book,” thought Alice “without pictures or conversations?”",
+          "color": "rose",
+          "style": "highlight",
+          "favorite": false,
+          "note": "整本书的第一句疑问，也是它给自己的阅读说明。"
+        }
+      ],
+      "toc": [
+        {
+          "title": "Down the Rabbit-Hole",
+          "page": 2,
+          "level": 0
+        },
+        {
+          "title": "The Pool of Tears",
+          "page": 8,
+          "level": 0
+        }
+      ]
+    },
+    {
+      "id": "sample-manual",
+      "title": "如何在 PageCat 读一本书",
+      "titleZh": "如何在 PageCat 读一本书",
+      "author": "PageCat 书房",
+      "authorZh": "PageCat 书房",
+      "year": "2026",
+      "genre": "使用手册",
+      "description": "一本关于这间数字书房的小册子：怎么取书、划线、收藏、记笔记，以及怎样和 AI 助手一起把一本书读深。",
+      "fileName": "如何在 PageCat 读一本书.pdf",
+      "size": 1114149,
+      "pageCount": 7,
+      "cover": "./covers/sample-manual.jpg",
+      "accent": "#a4613a",
+      "spineColor": "#a4613a",
+      "samplePdf": "./books/sample-manual.pdf",
+      "isSample": true,
+      "seedProgress": 0.62,
+      "seedAnnotations": [
+        {
+          "page": 5,
+          "quote": "一本书不必读完，才算读过。",
+          "color": "amber",
+          "style": "highlight",
+          "favorite": true,
+          "note": "把这句放在书架上，当作这间书房的门牌。"
+        },
+        {
+          "page": 2,
+          "quote": "这是代价，也是承诺。",
+          "color": "sage",
+          "style": "highlight",
+          "favorite": false,
+          "note": "本地优先不是营销词，是取舍。"
+        },
+        {
+          "page": 3,
+          "quote": "划线不是为了记住所有事，而是为了在未来的某一页，重新遇见当时的自己。",
+          "color": "rose",
+          "style": "highlight",
+          "favorite": true
+        }
+      ],
+      "toc": [
+        {
+          "title": "欢迎来到书房",
+          "page": 2,
+          "level": 0
+        },
+        {
+          "title": "在纸上划线",
+          "page": 3,
+          "level": 0
+        },
+        {
+          "title": "和 AI 读书",
+          "page": 4,
+          "level": 0
+        },
+        {
+          "title": "一点阅读方法",
+          "page": 5,
+          "level": 0
+        },
+        {
+          "title": "把这间书房带走",
+          "page": 6,
+          "level": 0
+        }
+      ]
+    }
+  ]
+}
